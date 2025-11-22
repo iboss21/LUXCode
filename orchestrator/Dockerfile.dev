@@ -1,0 +1,12 @@
+FROM node:22
+
+WORKDIR /srv
+
+COPY package.json package-lock.json* ./
+
+RUN npm install
+
+WORKDIR /workspace
+
+# Start the orchestrator API
+CMD ["node", "/srv/index.js"]
