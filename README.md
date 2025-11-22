@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="https://img.shields.io/badge/Coolify-Deploy%20Ready-brightgreen?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/bolt.diy-Self%20Hosted-purple?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Wrangler-Fixed-blue?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/TLS-Trusted-green?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Maintainer-iboss21-black?style=for-the-badge" />
+</p>
+
 # bolt.diy
 
 [![bolt.diy: AI-Powered Full-Stack Web Development in the Browser](./public/social_preview_index.jpg)](https://bolt.diy)
