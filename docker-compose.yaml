@@ -1,39 +1,272 @@
 version: "3.9"
 
 services:
-  app:
+  bolt-luxcode-prod:
     image: ghcr.io/stackblitz-labs/bolt.diy:latest
-    restart: unless-stopped
-
-    # Install CA certs + wrangler at container start
-    command: >
-      sh -c "
-      apt-get update &&
-      apt-get install -y ca-certificates &&
-      npm install -g wrangler@4.44.0 &&
-      pnpm run dockerstart
-      "
-
+    container_name: bolt-luxcode-production
+    hostname: app-prod.thelux.app
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '12.0'
+          memory: 24G
+        reservations:
+          cpus: '6.0'
+          memory: 12G
+    
+    command: |
+      bash -c '
+        set -e
+        
+        echo "========================================="
+        echo "BOLT.DIY ULTRA PRODUCTION DEPLOYMENT"
+        echo "Domain: app-prod.thelux.app"
+        echo "========================================="
+        
+        # System preparation
+        echo "[1/6] Updating system packages..."
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -qq > /dev/null 2>&1
+        apt-get install -y -qq \
+          ca-certificates \
+          curl \
+          wget \
+          git \
+          build-essential \
+          python3 \
+          gnupg2 \
+          > /dev/null 2>&1
+        
+        # Update CA certificates
+        echo "[2/6] Updating CA certificates..."
+        update-ca-certificates > /dev/null 2>&1
+        
+        # Install latest Node/npm
+        echo "[3/6] Setting up Node.js..."
+        npm config set registry https://registry.npmjs.org/
+        npm config set strict-ssl true
+        npm cache clean --force > /dev/null 2>&1
+        
+        # Install wrangler globally
+        echo "[4/6] Installing Wrangler CLI..."
+        npm install -g wrangler@latest --silent --no-audit --no-fund
+        
+        # System limits
+        echo "[5/6] Configuring system limits..."
+        ulimit -n 1048576 || ulimit -n 65536 || true
+        ulimit -u 32768 || true
+        
+        # Verify installations
+        echo "[6/6] Verifying installations..."
+        echo "  Node: $(node --version)"
+        echo "  NPM: $(npm --version)"
+        echo "  PNPM: $(pnpm --version)"
+        echo "  Wrangler: $(wrangler --version)"
+        
+        echo "========================================="
+        echo "Starting Bolt.DIY Application..."
+        echo "========================================="
+        
+        # Start application
+        exec pnpm run dockerstart
+      '
+    
     environment:
-      NODE_ENV: "production"
-      PORT: "5173"
-      HOST: "0.0.0.0"
+      # ============================================
+      # CORE APPLICATION SETTINGS
+      # ============================================
+      NODE_ENV: production
+      PORT: 5173
+      HOST: 0.0.0.0
       RUNNING_IN_DOCKER: "true"
-      NODE_OPTIONS: "--max_old_space_size=8192"
-      VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-debug}"
-      DEFAULT_NUM_CTX: "${DEFAULT_NUM_CTX:-65536}"
-
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      
+      # Domain configuration
+      DOMAIN: app-prod.thelux.app
+      PUBLIC_URL: https://app-prod.thelux.app
+      
+      # ============================================
+      # NODE.JS ULTRA PERFORMANCE
+      # ============================================
+      NODE_OPTIONS: "--max_old_space_size=20480 --max-semi-space-size=256 --optimize-for-size --gc-interval=100"
+      UV_THREADPOOL_SIZE: "256"
+      NODE_NO_WARNINGS: "1"
+      
+      # V8 flags for maximum performance
+      V8_FLAGS: "--max-old-space-size=20480 --optimize-for-size"
+      
+      # ============================================
+      # LOGGING & DEBUGGING
+      # ============================================
+      VITE_LOG_LEVEL: "info"
+      DEBUG: ""
+      LOG_LEVEL: "info"
+      
+      # ============================================
+      # CONTEXT & PERFORMANCE
+      # ============================================
+      DEFAULT_NUM_CTX: "200000"
+      MAX_TOKENS: "200000"
+      
+      # ============================================
+      # API KEYS - ANTHROPIC (CLAUDE)
+      # ============================================
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
-      GROQ_API_KEY: "${GROQ_API_KEY}"
-      HuggingFace_API_KEY: "${HuggingFace_API_KEY}"
-      GOOGLE_GENERATIVE_AI_API_KEY: "${GOOGLE_GENERATIVE_AI_API_KEY}"
-      OPEN_ROUTER_API_KEY: "${OPEN_ROUTER_API_KEY}"
-      XAI_API_KEY: "${XAI_API_KEY}"
-      TOGETHER_API_KEY: "${TOGETHER_API_KEY}"
-      TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL}"
-      AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG}"
-      OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL}"
-
+      ANTHROPIC_TIMEOUT: "600000"
+      ANTHROPIC_MAX_RETRIES: "10"
+      
+      # ============================================
+      # API KEYS - OPENAI
+      # ============================================
+      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      OPENAI_TIMEOUT: "600000"
+      OPENAI_MAX_RETRIES: "10"
+      
+      # ============================================
+      # API KEYS - OTHER PROVIDERS
+      # ============================================
+      GROQ_API_KEY: "${GROQ_API_KEY:-}"
+      GOOGLE_GENERATIVE_AI_API_KEY: "${GOOGLE_GENERATIVE_AI_API_KEY:-}"
+      OPEN_ROUTER_API_KEY: "${OPEN_ROUTER_API_KEY:-}"
+      XAI_API_KEY: "${XAI_API_KEY:-}"
+      TOGETHER_API_KEY: "${TOGETHER_API_KEY:-}"
+      TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL:-}"
+      HuggingFace_API_KEY: "${HuggingFace_API_KEY:-}"
+      AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG:-}"
+      
+      # ============================================
+      # OLLAMA (LOCAL LLM)
+      # ============================================
+      OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL:-http://host.docker.internal:11434}"
+      
+      # ============================================
+      # RATE LIMITING (DISABLED FOR PRO)
+      # ============================================
+      RATE_LIMIT_ENABLED: "false"
+      MAX_REQUESTS_PER_MINUTE: "999999"
+      MAX_CONCURRENT_REQUESTS: "1000"
+      
+      # ============================================
+      # WEBCONTAINER OPTIMIZATION
+      # ============================================
+      WEBCONTAINER_MAX_RETRIES: "20"
+      WEBCONTAINER_TIMEOUT: "900000"
+      WEBCONTAINER_MEMORY_LIMIT: "4096"
+      
+      # ============================================
+      # CACHE SETTINGS
+      # ============================================
+      CACHE_ENABLED: "true"
+      CACHE_MAX_SIZE: "10GB"
+      CACHE_TTL: "86400"
+      
+      # ============================================
+      # SECURITY HEADERS
+      # ============================================
+      FORCE_HTTPS: "true"
+      HSTS_ENABLED: "true"
+      
+      # ============================================
+      # NPM/PNPM CONFIGURATION
+      # ============================================
+      NPM_CONFIG_LOGLEVEL: "error"
+      PNPM_HOME: "/root/.local/share/pnpm"
+      
+    ports:
+      - "5173:5173"
+    
+    volumes:
+      # Persistent data
+      - bolt_data:/app/.bolt:rw
+      - bolt_cache:/app/.cache:rw
+      - bolt_node_modules:/app/node_modules:rw
+      
+      # Temp and shared memory
+      - /tmp:/tmp:rw
+      - /dev/shm:/dev/shm:rw
+      
+      # Optional: mount your custom modifications
+      # - ./custom-config:/app/custom:ro
+    
+    networks:
+      - bolt_production_network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5173/health || curl -f http://localhost:5173/ || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 90s
+    
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+      nproc:
+        soft: 65536
+        hard: 65536
+      memlock:
+        soft: -1
+        hard: -1
+    
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "app-prod.thelux.app:127.0.0.1"
+    
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        compress: "true"
+    
+    labels:
+      # Coolify labels
+      - "coolify.managed=true"
+      - "coolify.type=application"
+      - "coolify.name=bolt-luxcode-production"
+      
+      # Traefik labels (if using Traefik)
+      - "traefik.enable=true"
+      - "traefik.http.routers.bolt-luxcode.rule=Host(`app-prod.thelux.app`)"
+      - "traefik.http.routers.bolt-luxcode.entrypoints=websecure"
+      - "traefik.http.routers.bolt-luxcode.tls=true"
+      - "traefik.http.routers.bolt-luxcode.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bolt-luxcode.loadbalancer.server.port=5173"
+      
+      # HTTP to HTTPS redirect
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.routers.bolt-luxcode-http.rule=Host(`app-prod.thelux.app`)"
+      - "traefik.http.routers.bolt-luxcode-http.entrypoints=web"
+      - "traefik.http.routers.bolt-luxcode-http.middlewares=redirect-to-https"
+
+volumes:
+  bolt_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/bolt-luxcode/data
+  
+  bolt_cache:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/bolt-luxcode/cache
+  
+  bolt_node_modules:
+    driver: local
+
+networks:
+  bolt_production_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
