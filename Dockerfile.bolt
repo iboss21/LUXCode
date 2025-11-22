@@ -1,0 +1,15 @@
+FROM ghcr.io/stackblitz-labs/bolt.diy:latest
+
+USER root
+
+RUN apt-get update -qq \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates \
+      git \
+      curl \
+ && npm install -g wrangler@4.44.0 \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV WRANGLER_SEND_METRICS=false
+
+USER node
