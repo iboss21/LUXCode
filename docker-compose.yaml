@@ -1,37 +1,22 @@
 version: "3.9"
 
 services:
-  app:
-    image: ghcr.io/stackblitz-labs/bolt.diy:latest
+  bolt:
+    build:
+      context: .
+      dockerfile: Dockerfile.bolt   # see below
     container_name: bolt-luxcode-prod
-    restart: always
-    
-    # MATCHED TO YOUR 8-CORE VPS
-    deploy:
-      resources:
-        limits:
-          cpus: '8.0'
-          memory: 16G
-        reservations:
-          cpus: '4.0'
-          memory: 8G
-    
-    command: >
-      sh -c "
-      apt-get update -qq &&
-      apt-get install -y ca-certificates &&
-      npm install -g wrangler@4.44.0 &&
-      pnpm run dockerstart
-      "
-    
+    restart: unless-stopped
+
     environment:
       NODE_ENV: "production"
       PORT: "5173"
       HOST: "0.0.0.0"
       RUNNING_IN_DOCKER: "true"
-      NODE_OPTIONS: "--max_old_space_size=14336"
+      NODE_OPTIONS: "--max_old_space_size=9216"
       VITE_LOG_LEVEL: "info"
-      DEFAULT_NUM_CTX: "128000"
+      DEFAULT_NUM_CTX: "65536"
+
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       GROQ_API_KEY: "${GROQ_API_KEY}"
@@ -43,6 +28,30 @@ services:
       TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL}"
       AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG}"
       OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL}"
-    
+
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+    # healthcheck so Coolify knows if Bolt is alive
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  dev:
+    image: node:22
+    container_name: lux-dev
+    working_dir: /workspace
+    restart: unless-stopped
+
+    # this is your "unlimited dev" filesystem
+    volumes:
+      - ./workspace:/workspace
+
+    tty: true
+    stdin_open: true
+
+    # keep container alive (you attach when you want)
+    command: tail -f /dev/null
