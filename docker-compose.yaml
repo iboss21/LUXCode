@@ -5,9 +5,12 @@ services:
     image: ghcr.io/stackblitz-labs/bolt.diy:latest
     restart: unless-stopped
 
-    # Install wrangler on startup, then run official dockerstart
+    # Install CA certs + wrangler, then start Bolt
     command: >
-      sh -c "npm install -g wrangler@4.44.0 &&
+      sh -c "apt-get update &&
+             apt-get install -y ca-certificates &&
+             rm -rf /var/lib/apt/lists/* &&
+             npm install -g wrangler@4.44.0 &&
              pnpm run dockerstart"
 
     environment:
@@ -15,15 +18,10 @@ services:
       PORT: "5173"
       HOST: "0.0.0.0"
       RUNNING_IN_DOCKER: "true"
-
-      # Give Node + wrangler plenty of heap
       NODE_OPTIONS: "--max_old_space_size=8192"
-
-      # Logging / tuning
       VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-debug}"
       DEFAULT_NUM_CTX: "${DEFAULT_NUM_CTX:-65536}"
 
-      # AI providers – Coolify injects real values
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       GROQ_API_KEY: "${GROQ_API_KEY}"
