@@ -5,13 +5,14 @@ services:
     image: ghcr.io/stackblitz-labs/bolt.diy:latest
     restart: unless-stopped
 
-    # Install CA certs + wrangler, then start Bolt
+    # Install CA certs + wrangler at container start
     command: >
-      sh -c "apt-get update &&
-             apt-get install -y ca-certificates &&
-             rm -rf /var/lib/apt/lists/* &&
-             npm install -g wrangler@4.44.0 &&
-             pnpm run dockerstart"
+      sh -c "
+      apt-get update &&
+      apt-get install -y ca-certificates &&
+      npm install -g wrangler@4.44.0 &&
+      pnpm run dockerstart
+      "
 
     environment:
       NODE_ENV: "production"
