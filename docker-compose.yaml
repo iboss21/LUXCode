@@ -6,43 +6,32 @@ services:
     container_name: bolt-luxcode-prod
     restart: always
     
-    # ULTRA AGGRESSIVE RESOURCES
+    # MATCHED TO YOUR 8-CORE VPS
     deploy:
       resources:
         limits:
-          cpus: '12.0'
-          memory: 24G
+          cpus: '8.0'
+          memory: 16G
         reservations:
-          cpus: '6.0'
-          memory: 12G
+          cpus: '4.0'
+          memory: 8G
     
     command: >
       sh -c "
       apt-get update -qq &&
-      apt-get install -y ca-certificates curl &&
+      apt-get install -y ca-certificates &&
       npm install -g wrangler@4.44.0 &&
-      ulimit -n 65536 &&
       pnpm run dockerstart
       "
     
     environment:
-      # Core
       NODE_ENV: "production"
       PORT: "5173"
       HOST: "0.0.0.0"
       RUNNING_IN_DOCKER: "true"
-      
-      # ULTRA PERFORMANCE
-      NODE_OPTIONS: "--max_old_space_size=20480 --max-semi-space-size=256"
-      UV_THREADPOOL_SIZE: "256"
-      
-      # Logging
+      NODE_OPTIONS: "--max_old_space_size=14336"
       VITE_LOG_LEVEL: "info"
-      
-      # Context
-      DEFAULT_NUM_CTX: "200000"
-      
-      # API Keys
+      DEFAULT_NUM_CTX: "128000"
       OPENAI_API_KEY: "${OPENAI_API_KEY}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
       GROQ_API_KEY: "${GROQ_API_KEY}"
@@ -54,24 +43,6 @@ services:
       TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL}"
       AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG}"
       OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL}"
-      
-      # Timeouts (10 minutes)
-      ANTHROPIC_TIMEOUT: "600000"
-      OPENAI_TIMEOUT: "600000"
-      
-      # No rate limits
-      RATE_LIMIT_ENABLED: "false"
-    
-    ports:
-      - "5173:5173"
-    
-    ulimits:
-      nofile:
-        soft: 65536
-        hard: 65536
-      nproc:
-        soft: 32768
-        hard: 32768
     
     extra_hosts:
       - "host.docker.internal:host-gateway"
