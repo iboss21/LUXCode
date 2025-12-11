@@ -16,7 +16,7 @@ This guide helps you deploy LUXCode on Coolify or any VPS in 5 minutes.
    ```
 6. **Deploy** → Wait ~3-5 minutes → Done!
 
-For detailed instructions, see [COOLIFY.md](./COOLIFY.md)
+For detailed instructions, see [coolify-detailed.md](./coolify-detailed.md)
 
 ---
 
@@ -206,9 +206,12 @@ chmod 600 .env
 
 ## 📚 Documentation
 
-- **Detailed Deployment Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
-- **Coolify Setup**: [COOLIFY.md](./COOLIFY.md)
-- **Main README**: [README.md](./README.md)
+- **Deployment Overview**: [README.md](./README.md)
+- **Coolify Setup**: [coolify-detailed.md](./coolify-detailed.md)
+- **Docker Setup**: [docker.md](./docker.md)
+- **VPS Setup**: [vps.md](./vps.md)
+- **Local Development**: [local-development.md](./local-development.md)
+- **Main README**: [../README.md](../README.md)
 
 ---
 

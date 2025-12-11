@@ -1,5 +1,7 @@
 # 🚀 Release v1.0.0
 
+> **Note**: This changelog reflects the upstream bolt.diy project history. LUXCode is a fork of bolt.diy with additional features and deployment fixes. Links reference the original bolt.diy repository.
+
 ## What's Changed 🌟
 
 ### 🔄 Changes since v0.0.7

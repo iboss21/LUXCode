@@ -22,6 +22,28 @@ We have also launched an experimental agent called the "bolt.diy Expert" that ca
 
 bolt.diy was originally started by [Cole Medin](https://www.youtube.com/@ColeMedin) but has quickly grown into a massive community effort to build the BEST open source AI coding assistant!
 
+## 📚 Comprehensive Documentation
+
+**🆕 NEW: Complete documentation with deployment guides!**
+
+We've created extensive documentation to help you get started and deploy LUXCode:
+
+- **📖 [Documentation Hub](./docs/README.md)** - Your gateway to all documentation
+- **🚀 [Getting Started Guide](./docs/guides/getting-started.md)** - First steps with LUXCode  
+- **🔑 [API Keys Setup Guide](./docs/guides/api-keys.md)** - Complete guide for all 19+ providers
+- **🐳 [Deployment Guides](./docs/deployment/README.md)** - Deploy to Coolify, Docker, VPS, or locally
+
+### Quick Deploy Links
+
+| Method | Time | Difficulty | Guide |
+|--------|------|-----------|-------|
+| 🎨 **Coolify** | 5 min | ⭐ Easy | [Coolify Guide](./docs/deployment/coolify-detailed.md) |
+| 🐳 **Docker** | 10 min | ⭐⭐ Medium | [Docker Guide](./docs/deployment/docker.md) |
+| 💻 **VPS** | 15 min | ⭐⭐⭐ Hard | [VPS Guide](./docs/deployment/vps.md) |
+| 🖥️ **Local** | 5 min | ⭐ Easy | [Local Dev Guide](./docs/deployment/local-development.md) |
+
+**Total Documentation:** 6000+ lines across 10+ comprehensive guides with step-by-step instructions, troubleshooting, and best practices.
+
 ## Table of Contents
 
 - [Join the Community](#join-the-community)
@@ -47,7 +69,7 @@ Bolt.diy is a community effort! Still, the core team of contributors aims at org
 you to understand where the current areas of focus are.
 
 If you want to know what we are working on, what we are planning to work on, or if you want to contribute to the
-project, please check the [project management guide](./PROJECT.md) to get started easily.
+project, please check the [project management guide](./docs/PROJECT.md) to get started easily.
 
 ## Recent Major Additions
 
@@ -502,7 +524,7 @@ Remember to always commit your local changes or stash them before pulling update
 
 ## Contributing
 
-We welcome contributions! Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
+We welcome contributions! Check out our [Contributing Guide](./docs/CONTRIBUTING.md) to get started.
 
 ---
 
@@ -514,7 +536,7 @@ Explore upcoming features and priorities on our [Roadmap](https://roadmap.sh/r/o
 
 ## FAQ
 
-For answers to common questions, issues, and to see a list of recommended models, visit our [FAQ Page](FAQ.md).
+For answers to common questions, issues, and to see a list of recommended models, visit our [FAQ Page](./docs/FAQ.md).
 
 
 # Licensing
