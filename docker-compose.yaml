@@ -1,57 +1,76 @@
 version: "3.9"
 
 services:
-  bolt:
+  luxcode:
     build:
       context: .
-      dockerfile: Dockerfile.bolt   # see below
-    container_name: bolt-luxcode-prod
+      dockerfile: Dockerfile
+      target: production
+    container_name: luxcode-app
     restart: unless-stopped
+
+    ports:
+      - "${PORT:-5173}:5173"
 
     environment:
       NODE_ENV: "production"
       PORT: "5173"
       HOST: "0.0.0.0"
-      RUNNING_IN_DOCKER: "true"
-      NODE_OPTIONS: "--max_old_space_size=9216"
-      VITE_LOG_LEVEL: "info"
-      DEFAULT_NUM_CTX: "65536"
+      NODE_OPTIONS: "--max_old_space_size=4096"
+      
+      # LLM Provider API Keys (load from .env file or set here)
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      GROQ_API_KEY: "${GROQ_API_KEY:-}"
+      XAI_API_KEY: "${XAI_API_KEY:-}"
+      GOOGLE_GENERATIVE_AI_API_KEY: "${GOOGLE_GENERATIVE_AI_API_KEY:-}"
+      OPEN_ROUTER_API_KEY: "${OPEN_ROUTER_API_KEY:-}"
+      TOGETHER_API_KEY: "${TOGETHER_API_KEY:-}"
+      TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL:-}"
+      HuggingFace_API_KEY: "${HuggingFace_API_KEY:-}"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY:-}"
+      MISTRAL_API_KEY: "${MISTRAL_API_KEY:-}"
+      COHERE_API_KEY: "${COHERE_API_KEY:-}"
+      PERPLEXITY_API_KEY: "${PERPLEXITY_API_KEY:-}"
+      
+      # Ollama Configuration (optional - for local models)
+      OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL:-}"
+      
+      # AWS Bedrock Configuration (optional)
+      AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG:-}"
+      
+      # GitHub Integration (optional)
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      
+      # Logging
+      VITE_LOG_LEVEL: "${VITE_LOG_LEVEL:-info}"
 
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
-      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
-      GROQ_API_KEY: "${GROQ_API_KEY}"
-      HuggingFace_API_KEY: "${HuggingFace_API_KEY}"
-      GOOGLE_GENERATIVE_AI_API_KEY: "${GOOGLE_GENERATIVE_AI_API_KEY}"
-      OPEN_ROUTER_API_KEY: "${OPEN_ROUTER_API_KEY}"
-      XAI_API_KEY: "${XAI_API_KEY}"
-      TOGETHER_API_KEY: "${TOGETHER_API_KEY}"
-      TOGETHER_API_BASE_URL: "${TOGETHER_API_BASE_URL}"
-      AWS_BEDROCK_CONFIG: "${AWS_BEDROCK_CONFIG}"
-      OLLAMA_API_BASE_URL: "${OLLAMA_API_BASE_URL}"
+    # Health check for container orchestration
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
+    # Allow access to host network for Ollama
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
-    # healthcheck so Coolify knows if Bolt is alive
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5173/api/health"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+    # Optional: Mount volumes for persistent data
+    # volumes:
+    #   - ./data:/app/data
 
-  dev:
-    image: node:22
-    container_name: lux-dev
-    working_dir: /workspace
-    restart: unless-stopped
+  # Optional: Include Ollama service for local LLM
+  # Uncomment if you want to run Ollama alongside LUXCode
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: luxcode-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
 
-    # this is your "unlimited dev" filesystem
-    volumes:
-      - ./workspace:/workspace
-
-    tty: true
-    stdin_open: true
-
-    # keep container alive (you attach when you want)
-    command: tail -f /dev/null
+# volumes:
+#   ollama_data:
