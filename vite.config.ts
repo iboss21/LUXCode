@@ -19,6 +19,9 @@ export default defineConfig((config) => {
     build: {
       target: 'esnext',
     },
+    ssr: {
+      noExternal: ['remix-island', 'nanostores'],
+    },
     plugins: [
       nodePolyfills({
         include: ['buffer', 'process', 'util', 'stream'],
@@ -45,6 +48,7 @@ export default defineConfig((config) => {
       },
       config.mode !== 'test' && remixCloudflareDevProxy(),
       remixVitePlugin({
+        serverBuildFile: 'index.js',
         future: {
           v3_fetcherPersist: true,
           v3_relativeSplatPath: true,

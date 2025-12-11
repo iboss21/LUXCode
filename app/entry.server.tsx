@@ -1,10 +1,16 @@
 import type { AppLoadContext } from '@remix-run/cloudflare';
 import { RemixServer } from '@remix-run/react';
 import { isbot } from 'isbot';
-import { renderToReadableStream } from 'react-dom/server';
+import * as ReactDOMServer from 'react-dom/server';
 import { renderHeadToString } from 'remix-island';
 import { Head } from './root';
 import { themeStore } from '~/lib/stores/theme';
+
+// Handle CommonJS/ESM compatibility
+const renderToReadableStream =
+  typeof ReactDOMServer.renderToReadableStream === 'function'
+    ? ReactDOMServer.renderToReadableStream
+    : (ReactDOMServer as any).default?.renderToReadableStream;
 
 export default async function handleRequest(
   request: Request,
@@ -40,7 +46,7 @@ export default async function handleRequest(
       function read() {
         reader
           .read()
-          .then(({ done, value }) => {
+          .then(({ done, value }: { done: boolean; value?: Uint8Array }) => {
             if (done) {
               controller.enqueue(new Uint8Array(new TextEncoder().encode('</div></body></html>')));
               controller.close();
@@ -51,7 +57,7 @@ export default async function handleRequest(
             controller.enqueue(value);
             read();
           })
-          .catch((error) => {
+          .catch((error: unknown) => {
             controller.error(error);
             readable.cancel();
           });

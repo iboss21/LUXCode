@@ -12,226 +12,171 @@
  * The app still works 100% on Cloudflare Workers/Pages with `wrangler dev` and `wrangler deploy`.
  */
 
-import { createRequestHandler } from '@remix-run/node';
-import { createServer } from 'http';
-import { installGlobals } from '@remix-run/node';
-import { readFileSync } from 'fs';
-import { join, resolve } from 'path';
+import { createRequestHandler as createNodeRequestHandler } from '@remix-run/node';
+import { broadcastDevReady, installGlobals } from '@remix-run/node';
+import express from 'express';
+import compression from 'compression';
+import morgan from 'morgan';
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Install fetch, Request, Response globals for Node.js
 installGlobals();
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-
-// Load environment variables
-const loadEnv = () => {
-  try {
-    // Try to load from .env files
-    const dotenv = await import('dotenv');
-    dotenv.config({ path: resolve(__dirname, '.env.local') });
-    dotenv.config({ path: resolve(__dirname, '.env') });
-  } catch (error) {
-    // dotenv not available or .env files don't exist - use process.env directly
-    console.warn('Could not load dotenv, using existing environment variables');
-  }
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Environment detection
-const isProduction = process.env.NODE_ENV === 'production';
+const MODE = process.env.NODE_ENV || 'production';
+const IS_PROD = MODE === 'production';
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '0.0.0.0';
 
 console.log('🚀 Starting LUXCode Node.js Server...');
-console.log(`   Mode: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`   Mode: ${MODE.toUpperCase()}`);
 console.log(`   Port: ${PORT}`);
 console.log(`   Host: ${HOST}`);
 
-// Load the Remix server build
-let build;
-const buildPath = resolve(__dirname, 'build', 'server', 'index.js');
+const app = express();
 
-try {
-  build = await import(buildPath);
-  console.log('✅ Loaded Remix server build from:', buildPath);
-} catch (error) {
-  console.error('❌ Failed to load Remix build. Did you run `npm run build`?');
-  console.error('   Looking for:', buildPath);
-  console.error('   Error:', error.message);
-  process.exit(1);
+// Production middleware
+if (IS_PROD) {
+  app.use(compression());
+  // Trust proxy for correct IP addresses
+  app.set('trust proxy', 1);
 }
 
-// Create mock Cloudflare environment for compatibility
-// This provides the same API surface as Cloudflare Workers but uses Node.js environment
-const createNodeEnv = () => {
-  return new Proxy(process.env, {
-    get(target, prop) {
-      // Convert any property access to environment variable lookup
-      return target[prop] || undefined;
-    },
-  });
-};
+// Logging
+app.use(morgan('tiny'));
 
-// Create Remix request handler with Node.js context
-const remixHandler = createRequestHandler({
-  build,
-  mode: isProduction ? 'production' : 'development',
-  getLoadContext: (req) => {
-    // Provide a compatible context object that matches Cloudflare's shape
-    // but uses Node.js environment variables
-    return {
-      cloudflare: {
-        env: createNodeEnv(),
-        cf: null, // Cloudflare request properties not available on Node.js
-        ctx: {
-          waitUntil: (promise) => {
-            // In Cloudflare Workers, waitUntil keeps the worker alive
-            // On Node.js, we just let promises complete naturally
-            promise.catch(console.error);
-          },
-          passThroughOnException: () => {
-            // No-op on Node.js
-          },
-        },
-      },
-      // Add runtime identifier for conditional logic
-      runtime: 'node',
-    };
-  },
+// Serve static files from build/client
+const BUILD_PATH = join(__dirname, 'build', 'client');
+app.use(
+  express.static(BUILD_PATH, {
+    maxAge: IS_PROD ? '1y' : '0',
+    immutable: IS_PROD,
+  })
+);
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    runtime: 'node',
+    mode: MODE,
+    timestamp: new Date().toISOString(),
+  });
 });
 
-// Create HTTP server
-const server = createServer(async (req, res) => {
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    runtime: 'node',
+    mode: MODE,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+async function startServer() {
   try {
-    // Health check endpoint
-    if (req.url === '/api/health' || req.url === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', runtime: 'node', timestamp: new Date().toISOString() }));
-      return;
-    }
+    // Dynamically import the server build
+    const BUILD_SERVER_PATH = join(__dirname, 'build', 'server', 'index.js');
+    const buildModule = await import(BUILD_SERVER_PATH);
+    
+    // Remix vite plugin exports named exports, not default
+    const build = buildModule;
 
-    // Serve static files from build/client
-    if (req.method === 'GET' && !req.url.startsWith('/api')) {
-      const staticPath = join(__dirname, 'build', 'client', req.url);
-      try {
-        const stat = await import('fs/promises').then(fs => fs.stat(staticPath));
-        if (stat.isFile()) {
-          const content = readFileSync(staticPath);
-          const ext = staticPath.split('.').pop();
-          const contentTypes = {
-            'html': 'text/html',
-            'js': 'application/javascript',
-            'css': 'text/css',
-            'json': 'application/json',
-            'png': 'image/png',
-            'jpg': 'image/jpeg',
-            'svg': 'image/svg+xml',
-            'ico': 'image/x-icon',
-          };
-          res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'application/octet-stream' });
-          res.end(content);
-          return;
-        }
-      } catch (err) {
-        // File doesn't exist, fall through to Remix handler
-      }
-    }
+    console.log('✅ Loaded Remix server build');
 
-    // Convert Node.js request to Web Request
-    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-    const headers = new Headers();
-    for (const [key, value] of Object.entries(req.headers)) {
-      if (value) {
-        if (Array.isArray(value)) {
-          for (const v of value) {
-            headers.append(key, v);
-          }
-        } else {
-          headers.set(key, value);
-        }
-      }
-    }
-
-    let body = undefined;
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      body = await new Promise((resolve) => {
-        const chunks = [];
-        req.on('data', (chunk) => chunks.push(chunk));
-        req.on('end', () => resolve(Buffer.concat(chunks)));
+    // Create mock Cloudflare environment for compatibility
+    const createNodeEnv = () => {
+      return new Proxy(process.env, {
+        get(target, prop) {
+          return target[prop] || undefined;
+        },
       });
-    }
+    };
 
-    const request = new Request(url, {
-      method: req.method,
-      headers,
-      body,
+    // Create Remix request handler with Node.js context
+    const requestHandler = createNodeRequestHandler({
+      build,
+      mode: MODE,
+      getLoadContext: (req, res) => {
+        // Provide a compatible context object that matches Cloudflare's shape
+        // but uses Node.js environment variables
+        return {
+          cloudflare: {
+            env: createNodeEnv(),
+            cf: null,
+            ctx: {
+              waitUntil: (promise) => {
+                promise.catch(console.error);
+              },
+              passThroughOnException: () => {},
+            },
+          },
+          runtime: 'node',
+        };
+      },
     });
 
-    // Handle with Remix
-    const response = await remixHandler(request);
+    // Handle all other requests with Remix
+    app.all('*', requestHandler);
 
-    // Convert Web Response to Node.js response
-    res.writeHead(response.status, Object.fromEntries(response.headers));
-    
-    if (response.body) {
-      const reader = response.body.getReader();
-      const pump = async () => {
-        const { done, value } = await reader.read();
-        if (done) {
-          res.end();
-          return;
-        }
-        res.write(value);
-        await pump();
-      };
-      await pump();
-    } else {
-      res.end();
-    }
+    // Start server
+    const server = app.listen(PORT, HOST, () => {
+      console.log('');
+      console.log('🎉 LUXCode is running!');
+      console.log('');
+      console.log(`   ➜ Local:   http://localhost:${PORT}`);
+      console.log(`   ➜ Network: http://${HOST}:${PORT}`);
+      console.log('');
+      if (!IS_PROD) {
+        console.log('   Press Ctrl+C to stop');
+      }
+      console.log('');
+
+      if (!IS_PROD) {
+        broadcastDevReady(build);
+      }
+    });
+
+    // Graceful shutdown
+    const shutdown = (signal) => {
+      console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      server.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+      });
+
+      // Force close after 10 seconds
+      setTimeout(() => {
+        console.error('❌ Forced shutdown');
+        process.exit(1);
+      }, 10000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
+
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+        console.error('   Try setting a different PORT environment variable');
+      } else {
+        console.error('❌ Server error:', error);
+      }
+      process.exit(1);
+    });
   } catch (error) {
-    console.error('Server error:', error);
-    res.writeHead(500, { 'Content-Type': 'text/plain' });
-    res.end('Internal Server Error');
-  }
-});
-
-// Graceful shutdown
-const shutdown = () => {
-  console.log('\n🛑 Shutting down gracefully...');
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
-  
-  // Force close after 10 seconds
-  setTimeout(() => {
-    console.error('❌ Forced shutdown');
+    console.error('❌ Failed to start server:', error);
+    console.error('');
+    console.error('   Make sure you ran `npm run build` first');
+    console.error('   Looking for: build/server/index.js');
     process.exit(1);
-  }, 10000);
-};
-
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-
-// Start server
-server.listen(PORT, HOST, () => {
-  console.log('');
-  console.log('🎉 LUXCode is running!');
-  console.log('');
-  console.log(`   ➜ Local:   http://localhost:${PORT}`);
-  console.log(`   ➜ Network: http://${HOST}:${PORT}`);
-  console.log('');
-  console.log('   Press Ctrl+C to stop');
-  console.log('');
-});
-
-// Handle server errors
-server.on('error', (error) => {
-  if (error.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use`);
-    console.error('   Try setting a different PORT environment variable');
-  } else {
-    console.error('❌ Server error:', error);
   }
-  process.exit(1);
-});
+}
+
+// Start the server
+startServer();
