@@ -206,9 +206,12 @@ chmod 600 .env
 
 ## 📚 Documentation
 
-- **Detailed Deployment Guide**: [DEPLOYMENT.md](./DEPLOYMENT.md)
-- **Coolify Setup**: [COOLIFY.md](./COOLIFY.md)
-- **Main README**: [README.md](./README.md)
+- **Deployment Overview**: [README.md](./README.md)
+- **Coolify Setup**: [coolify-detailed.md](./coolify-detailed.md)
+- **Docker Setup**: [docker.md](./docker.md)
+- **VPS Setup**: [vps.md](./vps.md)
+- **Local Development**: [local-development.md](./local-development.md)
+- **Main README**: [../README.md](../README.md)
 
 ---
 
