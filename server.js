@@ -12,7 +12,7 @@
  * The app still works 100% on Cloudflare Workers/Pages with `wrangler dev` and `wrangler deploy`.
  */
 
-import { createRequestHandler as createNodeRequestHandler } from '@remix-run/node';
+import { createRequestHandler } from '@remix-run/express';
 import { broadcastDevReady, installGlobals } from '@remix-run/node';
 import express from 'express';
 import compression from 'compression';
@@ -84,7 +84,11 @@ async function startServer() {
     const buildModule = await import(BUILD_SERVER_PATH);
     
     // Remix vite plugin exports named exports, not default
-    const build = buildModule;
+    const build = {
+      ...buildModule,
+      // Ensure routes is explicitly copied
+      routes: buildModule.routes,
+    };
 
     console.log('✅ Loaded Remix server build');
 
@@ -97,8 +101,8 @@ async function startServer() {
       });
     };
 
-    // Create Remix request handler with Node.js context
-    const requestHandler = createNodeRequestHandler({
+    // Create Remix request handler with Express adapter
+    const requestHandler = createRequestHandler({
       build,
       mode: MODE,
       getLoadContext: (req, res) => {

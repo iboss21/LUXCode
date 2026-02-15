@@ -167,6 +167,9 @@ importers:
       '@remix-run/cloudflare-pages':
         specifier: ^2.15.2
         version: 2.16.8(@cloudflare/workers-types@4.20251014.0)(typescript@5.8.3)
+      '@remix-run/express':
+        specifier: ^2.15.2
+        version: 2.16.8(express@4.21.2)(typescript@5.8.3)
       '@remix-run/node':
         specifier: ^2.15.2
         version: 2.16.8(typescript@5.8.3)
