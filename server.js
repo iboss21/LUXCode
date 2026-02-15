@@ -84,11 +84,7 @@ async function startServer() {
     const buildModule = await import(BUILD_SERVER_PATH);
     
     // Remix vite plugin exports named exports, not default
-    const build = {
-      ...buildModule,
-      // Ensure routes is explicitly copied
-      routes: buildModule.routes,
-    };
+    const build = buildModule;
 
     console.log('✅ Loaded Remix server build');
 
