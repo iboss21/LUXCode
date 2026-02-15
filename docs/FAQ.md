@@ -90,6 +90,20 @@ To troubleshoot:
 
 Local LLMs like Qwen-2.5-Coder are powerful for small applications but still experimental for larger projects. For better results, consider using larger models like GPT-4o, Claude 3.5 Sonnet, or DeepSeek Coder V2 236b.
 
+### **"Custom error: No access to model: deepseek/deepseek-v3-0324" or similar model access errors**
+
+This error occurs when you try to use a model that requires authentication or isn't available in your account. Common causes:
+
+1. **Missing API Key**: Check your API key is set correctly in Settings > Environment Variables
+2. **GitHub Models**: If using models like `deepseek/deepseek-v3-0324`, you need a GitHub Personal Access Token with "GitHub Models" permission:
+   - Go to https://github.com/settings/tokens
+   - Create a token with "GitHub Models" permission
+   - Add it as `GITHUB_API_KEY` in Settings > Environment Variables
+3. **Model Availability**: The model might not be available in your region or tier
+4. **Model Name Changed**: Try selecting a different model from the dropdown
+
+**New Feature**: Use the **Environment Variables** tab in Settings to easily configure all your API keys and service tokens.
+
 ### **"Received structured exception #0xc0000005: access violation"**
 
 If you are getting this, you are probably on Windows. The fix is generally to update the [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170)

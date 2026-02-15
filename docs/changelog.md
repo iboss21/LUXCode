@@ -2,6 +2,37 @@
 
 > **Note**: This changelog reflects the upstream bolt.diy project history. LUXCode is a fork of bolt.diy with additional features and deployment fixes. Links reference the original bolt.diy repository.
 
+## LUXCode v1.0.1 - Latest Changes
+
+### ✨ New Features
+
+* **Environment Variables Management Tab** - Added dedicated UI for configuring API keys and services
+  - Searchable and filterable environment variables
+  - Category-based organization (AI Providers, Services, Development)
+  - Show/hide values for security
+  - Copy to clipboard functionality
+  - Security warnings about client-side vs server-side storage
+  - Support for 30+ environment variables including all AI providers and service integrations
+
+* **DeepSeek v3 GitHub Models Support** - Added missing DeepSeek v3 model variants
+  - Added `deepseek/deepseek-v3` model to GitHub provider
+  - Added `deepseek/deepseek-v3-0324` dated model variant
+  - Fixed "No access to model" errors for DeepSeek models on GitHub
+
+### 🐛 Bug Fixes
+
+* **Improved Error Handling** - Enhanced error messages for model access issues
+  - Added specific handling for "No access to model" errors
+  - Provides clear guidance about API keys, region restrictions, and model availability
+  - Directs users to Settings > Environment Variables for configuration
+  - Better error messages for GitHub Models authentication issues
+
+### 📚 Documentation
+
+* Added comprehensive Environment Variables guide (`docs/docs/environment-variables.md`)
+* Updated FAQ with troubleshooting for "No access to model" errors
+* Added instructions for GitHub Personal Access Token setup for GitHub Models
+
 ## What's Changed 🌟
 
 ### 🔄 Changes since v0.0.7
