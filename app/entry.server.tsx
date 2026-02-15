@@ -106,11 +106,13 @@ async function handleCloudflareRequest(
   });
 }
 
-// Node.js rendering (non-streaming for compatibility)
-// Note: Node.js doesn't support renderToReadableStream. While renderToPipeableStream
-// is available, it requires Node.js stream handling which doesn't work well in the
-// bundled Remix build. Using renderToString ensures compatibility across all Node.js
-// deployment targets (Docker, PM2, systemd, etc.) with minimal complexity.
+/*
+ * Node.js rendering (non-streaming for compatibility)
+ * Note: Node.js doesn't support renderToReadableStream. While renderToPipeableStream
+ * is available, it requires Node.js stream handling which doesn't work well in the
+ * bundled Remix build. Using renderToString ensures compatibility across all Node.js
+ * deployment targets (Docker, PM2, systemd, etc.) with minimal complexity.
+ */
 function handleNodeRequest(
   request: Request,
   responseStatusCode: number,
