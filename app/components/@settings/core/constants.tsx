@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List } from 'lucide-react';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, Key } from 'lucide-react';
 
 // GitLab icon component
 const GitLabIcon = () => (
@@ -53,6 +53,7 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   supabase: () => <SupabaseIcon />,
   'event-logs': List,
   mcp: Wrench,
+  'env-vars': Key,
 };
 
 export const TAB_LABELS: Record<TabType, string> = {
@@ -70,6 +71,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   supabase: 'Supabase',
   'event-logs': 'Event Logs',
   mcp: 'MCP Servers',
+  'env-vars': 'Environment Variables',
 };
 
 export const TAB_DESCRIPTIONS: Record<TabType, string> = {
@@ -87,22 +89,24 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   supabase: 'Setup Supabase database connection',
   'event-logs': 'View system events and logs',
   mcp: 'Configure MCP (Model Context Protocol) servers',
+  'env-vars': 'Configure environment variables for API keys and services',
 };
 
 export const DEFAULT_TAB_CONFIG = [
   // User Window Tabs (Always visible by default)
   { id: 'features', visible: true, window: 'user' as const, order: 0 },
   { id: 'data', visible: true, window: 'user' as const, order: 1 },
-  { id: 'cloud-providers', visible: true, window: 'user' as const, order: 2 },
-  { id: 'local-providers', visible: true, window: 'user' as const, order: 3 },
-  { id: 'github', visible: true, window: 'user' as const, order: 4 },
-  { id: 'gitlab', visible: true, window: 'user' as const, order: 5 },
-  { id: 'netlify', visible: true, window: 'user' as const, order: 6 },
-  { id: 'vercel', visible: true, window: 'user' as const, order: 7 },
-  { id: 'supabase', visible: true, window: 'user' as const, order: 8 },
-  { id: 'notifications', visible: true, window: 'user' as const, order: 9 },
-  { id: 'event-logs', visible: true, window: 'user' as const, order: 10 },
-  { id: 'mcp', visible: true, window: 'user' as const, order: 11 },
+  { id: 'env-vars', visible: true, window: 'user' as const, order: 2 },
+  { id: 'cloud-providers', visible: true, window: 'user' as const, order: 3 },
+  { id: 'local-providers', visible: true, window: 'user' as const, order: 4 },
+  { id: 'github', visible: true, window: 'user' as const, order: 5 },
+  { id: 'gitlab', visible: true, window: 'user' as const, order: 6 },
+  { id: 'netlify', visible: true, window: 'user' as const, order: 7 },
+  { id: 'vercel', visible: true, window: 'user' as const, order: 8 },
+  { id: 'supabase', visible: true, window: 'user' as const, order: 9 },
+  { id: 'notifications', visible: true, window: 'user' as const, order: 10 },
+  { id: 'event-logs', visible: true, window: 'user' as const, order: 11 },
+  { id: 'mcp', visible: true, window: 'user' as const, order: 12 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];

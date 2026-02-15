@@ -29,6 +29,7 @@ import NetlifyTab from '~/components/@settings/tabs/netlify/NetlifyTab';
 import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/CloudProvidersTab';
 import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
 import McpTab from '~/components/@settings/tabs/mcp/McpTab';
+import EnvVarsTab from '~/components/@settings/tabs/env/EnvVarsTab';
 
 interface ControlPanelProps {
   open: boolean;
@@ -133,6 +134,8 @@ export const ControlPanel = ({ open, onClose }: ControlPanelProps) => {
         return <FeaturesTab />;
       case 'data':
         return <DataTab />;
+      case 'env-vars':
+        return <EnvVarsTab />;
       case 'cloud-providers':
         return <CloudProvidersTab />;
       case 'local-providers':
