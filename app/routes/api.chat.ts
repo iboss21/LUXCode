@@ -350,6 +350,14 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         // Provide more specific error messages for common issues
         const errorMessage = error.message || 'Unknown error';
 
+        // Check for "No access to model" error (typically from GitHub Models or OpenRouter)
+        if (errorMessage.includes('No access to model') || errorMessage.includes('access to model')) {
+          const modelMatch = errorMessage.match(/model[:\s]+([^\s,]+)/i);
+          const modelName = modelMatch ? modelMatch[1] : 'this model';
+          
+          return `Custom error: No access to model: ${modelName}. This may be because: (1) The model requires authentication - check your API key in Settings, (2) The model is not available in your region or tier, (3) The model name has changed - try selecting a different model from the dropdown. For GitHub Models, ensure you have a valid GitHub Personal Access Token with GitHub Models permissions.`;
+        }
+
         if (errorMessage.includes('model') && errorMessage.includes('not found')) {
           return 'Custom error: Invalid model selected. Please check that the model name is correct and available.';
         }
@@ -363,7 +371,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           errorMessage.includes('unauthorized') ||
           errorMessage.includes('authentication')
         ) {
-          return 'Custom error: Invalid or missing API key. Please check your API key configuration.';
+          return 'Custom error: Invalid or missing API key. Please check your API key configuration in Settings > Cloud Providers or Settings > Local Providers.';
         }
 
         if (errorMessage.includes('token') && errorMessage.includes('limit')) {

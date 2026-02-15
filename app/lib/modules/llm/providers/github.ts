@@ -62,6 +62,20 @@ export default class GithubProvider extends BaseProvider {
       maxTokenAllowed: 128000,
       maxCompletionTokens: 4096,
     },
+    {
+      name: 'deepseek/deepseek-v3',
+      label: 'DeepSeek-V3',
+      provider: 'Github',
+      maxTokenAllowed: 64000,
+      maxCompletionTokens: 8192,
+    },
+    {
+      name: 'deepseek/deepseek-v3-0324',
+      label: 'DeepSeek-V3 (2024-03-24)',
+      provider: 'Github',
+      maxTokenAllowed: 64000,
+      maxCompletionTokens: 8192,
+    },
   ];
 
   async getDynamicModels(
