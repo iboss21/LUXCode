@@ -387,7 +387,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (errorMessage.includes('Failed to process successful response')) {
-          return 'Custom error: The AI service returned a response that could not be processed. This may be caused by: (1) Model compatibility issues - try selecting a different model, (2) Invalid response format from the API - check if your API key has access to the selected model, (3) Temporary API issues - please try again in a moment. If the problem persists, try switching to a different provider or model.';
+          return 'Custom error: The response could not be processed. Try selecting a different model or provider. If using a custom API, verify your API key has access to the selected model.';
         }
 
         return `Custom error: ${errorMessage}`;
