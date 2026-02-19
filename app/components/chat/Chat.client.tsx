@@ -264,16 +264,39 @@ export const ChatImpl = memo(
         let errorType: LlmErrorAlertType['errorType'] = 'unknown';
         let title = 'Request Failed';
 
-        if (errorInfo.statusCode === 401 || errorInfo.message.toLowerCase().includes('api key')) {
+        // Store lowercase message to avoid repeated conversions
+        const errorMessageLower = errorInfo.message.toLowerCase();
+
+        // Check for authentication errors first (most specific)
+        if (
+          errorInfo.statusCode === 401 ||
+          errorMessageLower.includes('invalid or missing api key') ||
+          errorMessageLower.includes('unauthorized') ||
+          (errorMessageLower.includes('authentication') && errorMessageLower.includes('failed'))
+        ) {
           errorType = 'authentication';
           title = 'Authentication Error';
-        } else if (errorInfo.statusCode === 429 || errorInfo.message.toLowerCase().includes('rate limit')) {
+        }
+        // Check for rate limit errors
+        else if (errorInfo.statusCode === 429 || errorMessageLower.includes('rate limit')) {
           errorType = 'rate_limit';
           title = 'Rate Limit Exceeded';
-        } else if (errorInfo.message.toLowerCase().includes('quota')) {
+        }
+        // Check for quota errors
+        else if (errorMessageLower.includes('quota')) {
           errorType = 'quota';
           title = 'Quota Exceeded';
-        } else if (errorInfo.statusCode >= 500) {
+        }
+        // Check for response processing errors (not auth issues)
+        else if (
+          errorMessageLower.includes('response could not be processed') ||
+          errorMessageLower.includes('no access to model')
+        ) {
+          errorType = 'unknown';
+          title = 'Response Processing Error';
+        }
+        // Check for server errors
+        else if (errorInfo.statusCode >= 500) {
           errorType = 'network';
           title = 'Server Error';
         }
