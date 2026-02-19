@@ -386,6 +386,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           return 'Custom error: Network error. Please check your internet connection and try again.';
         }
 
+        if (errorMessage.includes('Failed to process successful response')) {
+          return 'Custom error: The AI service returned a response that could not be processed. This may be caused by: (1) Model compatibility issues - try selecting a different model, (2) Invalid response format from the API - check if your API key has access to the selected model, (3) Temporary API issues - please try again in a moment. If the problem persists, try switching to a different provider or model.';
+        }
+
         return `Custom error: ${errorMessage}`;
       },
     }).pipeThrough(
