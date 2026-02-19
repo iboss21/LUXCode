@@ -386,6 +386,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           return 'Custom error: Network error. Please check your internet connection and try again.';
         }
 
+        if (errorMessage.includes('Failed to process successful response')) {
+          return 'Custom error: The response could not be processed. Try selecting a different model or provider. If using a custom API, verify your API key has access to the selected model.';
+        }
+
         return `Custom error: ${errorMessage}`;
       },
     }).pipeThrough(
