@@ -264,31 +264,33 @@ export const ChatImpl = memo(
         let errorType: LlmErrorAlertType['errorType'] = 'unknown';
         let title = 'Request Failed';
 
+        // Store lowercase message to avoid repeated conversions
+        const errorMessageLower = errorInfo.message.toLowerCase();
+
         // Check for authentication errors first (most specific)
         if (
           errorInfo.statusCode === 401 ||
-          errorInfo.message.toLowerCase().includes('invalid or missing api key') ||
-          errorInfo.message.toLowerCase().includes('unauthorized') ||
-          (errorInfo.message.toLowerCase().includes('authentication') &&
-            errorInfo.message.toLowerCase().includes('failed'))
+          errorMessageLower.includes('invalid or missing api key') ||
+          errorMessageLower.includes('unauthorized') ||
+          (errorMessageLower.includes('authentication') && errorMessageLower.includes('failed'))
         ) {
           errorType = 'authentication';
           title = 'Authentication Error';
         }
         // Check for rate limit errors
-        else if (errorInfo.statusCode === 429 || errorInfo.message.toLowerCase().includes('rate limit')) {
+        else if (errorInfo.statusCode === 429 || errorMessageLower.includes('rate limit')) {
           errorType = 'rate_limit';
           title = 'Rate Limit Exceeded';
         }
         // Check for quota errors
-        else if (errorInfo.message.toLowerCase().includes('quota')) {
+        else if (errorMessageLower.includes('quota')) {
           errorType = 'quota';
           title = 'Quota Exceeded';
         }
         // Check for response processing errors (not auth issues)
         else if (
-          errorInfo.message.toLowerCase().includes('response could not be processed') ||
-          errorInfo.message.toLowerCase().includes('no access to model')
+          errorMessageLower.includes('response could not be processed') ||
+          errorMessageLower.includes('no access to model')
         ) {
           errorType = 'unknown';
           title = 'Response Processing Error';
