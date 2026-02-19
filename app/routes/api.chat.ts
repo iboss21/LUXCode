@@ -355,7 +355,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           const modelMatch = errorMessage.match(/model[:\s]+([^\s,]+)/i);
           const modelName = modelMatch ? modelMatch[1] : 'this model';
 
-          return `Custom error: No access to model: ${modelName}. This may be because: (1) The model requires authentication - check your API key in Settings, (2) The model is not available in your region or tier, (3) The model name has changed - try selecting a different model from the dropdown. For GitHub Models, ensure you have a valid GitHub Personal Access Token with GitHub Models permissions.`;
+          return `Custom error: No access to model: ${modelName}. This may be because: (1) The model is not available in your region or tier, (2) Your account does not have permission to use this model, (3) The model name has changed - try selecting a different model from the dropdown. For GitHub Models, ensure you have a valid GitHub Personal Access Token with GitHub Models permissions.`;
         }
 
         if (errorMessage.includes('model') && errorMessage.includes('not found')) {
