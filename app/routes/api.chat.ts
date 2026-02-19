@@ -354,7 +354,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         if (errorMessage.includes('No access to model') || errorMessage.includes('access to model')) {
           const modelMatch = errorMessage.match(/model[:\s]+([^\s,]+)/i);
           const modelName = modelMatch ? modelMatch[1] : 'this model';
-          
+
           return `Custom error: No access to model: ${modelName}. This may be because: (1) The model requires authentication - check your API key in Settings, (2) The model is not available in your region or tier, (3) The model name has changed - try selecting a different model from the dropdown. For GitHub Models, ensure you have a valid GitHub Personal Access Token with GitHub Models permissions.`;
         }
 
@@ -387,7 +387,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
         }
 
         if (errorMessage.includes('Failed to process successful response')) {
-          return 'Custom error: The response could not be processed. Try selecting a different model or provider. If using a custom API, verify your API key has access to the selected model.';
+          return 'Custom error: The response could not be processed. This may indicate: (1) The selected model is not available or accessible with your account tier, (2) The API endpoint returned an invalid response format, (3) Network or proxy issues. Try selecting a different model or provider.';
         }
 
         return `Custom error: ${errorMessage}`;

@@ -15,10 +15,20 @@ const ENV_VARIABLES: EnvVariable[] = [
   // AI Providers
   { key: 'OPENAI_API_KEY', value: '', description: 'OpenAI API Key for GPT models', category: 'ai-providers' },
   { key: 'ANTHROPIC_API_KEY', value: '', description: 'Anthropic API Key for Claude models', category: 'ai-providers' },
-  { key: 'GOOGLE_GENERATIVE_AI_API_KEY', value: '', description: 'Google API Key for Gemini models', category: 'ai-providers' },
+  {
+    key: 'GOOGLE_GENERATIVE_AI_API_KEY',
+    value: '',
+    description: 'Google API Key for Gemini models',
+    category: 'ai-providers',
+  },
   { key: 'GROQ_API_KEY', value: '', description: 'Groq API Key for fast inference', category: 'ai-providers' },
   { key: 'DEEPSEEK_API_KEY', value: '', description: 'DeepSeek API Key', category: 'ai-providers' },
-  { key: 'GITHUB_API_KEY', value: '', description: 'GitHub Personal Access Token for GitHub Models', category: 'ai-providers' },
+  {
+    key: 'GITHUB_API_KEY',
+    value: '',
+    description: 'GitHub Personal Access Token for GitHub Models',
+    category: 'ai-providers',
+  },
   { key: 'OPEN_ROUTER_API_KEY', value: '', description: 'OpenRouter API Key', category: 'ai-providers' },
   { key: 'MISTRAL_API_KEY', value: '', description: 'Mistral API Key', category: 'ai-providers' },
   { key: 'COHERE_API_KEY', value: '', description: 'Cohere API Key', category: 'ai-providers' },
@@ -29,22 +39,52 @@ const ENV_VARIABLES: EnvVariable[] = [
   { key: 'HuggingFace_API_KEY', value: '', description: 'HuggingFace API Key', category: 'ai-providers' },
   { key: 'CEREBRAS_API_KEY', value: '', description: 'Cerebras API Key', category: 'ai-providers' },
   { key: 'FIREWORKS_API_KEY', value: '', description: 'Fireworks AI API Key', category: 'ai-providers' },
-  
+
   // Services
-  { key: 'VITE_GITHUB_ACCESS_TOKEN', value: '', description: 'GitHub token for repository operations', category: 'services' },
+  {
+    key: 'VITE_GITHUB_ACCESS_TOKEN',
+    value: '',
+    description: 'GitHub token for repository operations',
+    category: 'services',
+  },
   { key: 'VITE_GITLAB_ACCESS_TOKEN', value: '', description: 'GitLab access token', category: 'services' },
   { key: 'VITE_VERCEL_ACCESS_TOKEN', value: '', description: 'Vercel deployment token', category: 'services' },
   { key: 'VITE_NETLIFY_ACCESS_TOKEN', value: '', description: 'Netlify deployment token', category: 'services' },
   { key: 'VITE_SUPABASE_URL', value: '', description: 'Supabase project URL', category: 'services' },
   { key: 'VITE_SUPABASE_ANON_KEY', value: '', description: 'Supabase anonymous key', category: 'services' },
-  
+
   // Development
-  { key: 'OLLAMA_API_BASE_URL', value: '', description: 'Ollama base URL (e.g., http://127.0.0.1:11434)', category: 'development' },
-  { key: 'LMSTUDIO_API_BASE_URL', value: '', description: 'LM Studio base URL (e.g., http://127.0.0.1:1234)', category: 'development' },
-  { key: 'OPENAI_LIKE_API_BASE_URL', value: '', description: 'OpenAI-compatible API base URL', category: 'development' },
+  {
+    key: 'OLLAMA_API_BASE_URL',
+    value: '',
+    description: 'Ollama base URL (e.g., http://127.0.0.1:11434)',
+    category: 'development',
+  },
+  {
+    key: 'LMSTUDIO_API_BASE_URL',
+    value: '',
+    description: 'LM Studio base URL (e.g., http://127.0.0.1:1234)',
+    category: 'development',
+  },
+  {
+    key: 'OPENAI_LIKE_API_BASE_URL',
+    value: '',
+    description: 'OpenAI-compatible API base URL',
+    category: 'development',
+  },
   { key: 'OPENAI_LIKE_API_KEY', value: '', description: 'OpenAI-compatible API key', category: 'development' },
-  { key: 'VITE_LOG_LEVEL', value: '', description: 'Logging level (debug, info, warn, error)', category: 'development' },
-  { key: 'DEFAULT_NUM_CTX', value: '', description: 'Default context window size for local models', category: 'development' },
+  {
+    key: 'VITE_LOG_LEVEL',
+    value: '',
+    description: 'Logging level (debug, info, warn, error)',
+    category: 'development',
+  },
+  {
+    key: 'DEFAULT_NUM_CTX',
+    value: '',
+    description: 'Default context window size for local models',
+    category: 'development',
+  },
 ];
 
 export default function EnvVarsTab() {
@@ -56,6 +96,7 @@ export default function EnvVarsTab() {
   useEffect(() => {
     // Load environment variables from localStorage
     const saved = localStorage.getItem('bolt_env_vars');
+
     if (saved) {
       try {
         setEnvVars(JSON.parse(saved));
@@ -93,6 +134,7 @@ export default function EnvVarsTab() {
     const matchesSearch =
       envVar.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
       envVar.description.toLowerCase().includes(searchQuery.toLowerCase());
+
     return matchesCategory && matchesSearch;
   });
 
@@ -109,9 +151,10 @@ export default function EnvVarsTab() {
           <div className="text-sm text-yellow-800 dark:text-yellow-200">
             <p className="font-medium mb-1">Important Security Notice</p>
             <p>
-              Environment variables are stored in your browser's localStorage. For production deployments, use server-side
-              environment variables via <code className="bg-yellow-100 dark:bg-yellow-900/40 px-1 py-0.5 rounded">.env</code> files or your hosting provider's dashboard.
-              These client-side variables are for development and testing only.
+              Environment variables are stored in your browser's localStorage. For production deployments, use
+              server-side environment variables via{' '}
+              <code className="bg-yellow-100 dark:bg-yellow-900/40 px-1 py-0.5 rounded">.env</code> files or your
+              hosting provider's dashboard. These client-side variables are for development and testing only.
             </p>
           </div>
         </div>
@@ -153,7 +196,12 @@ export default function EnvVarsTab() {
                     : 'bg-[#FAFAFA] dark:bg-[#0A0A0A] text-bolt-elements-textSecondary border border-[#E5E5E5] dark:border-[#1A1A1A] hover:border-purple-500/50',
                 )}
               >
-                {category === 'all' ? 'All' : category.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                {category === 'all'
+                  ? 'All'
+                  : category
+                      .split('-')
+                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                      .join(' ')}
               </button>
             ))}
           </div>
@@ -192,11 +240,12 @@ export default function EnvVarsTab() {
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <code className="text-sm font-mono font-medium text-bolt-elements-textPrimary">
-                      {envVar.key}
-                    </code>
+                    <code className="text-sm font-mono font-medium text-bolt-elements-textPrimary">{envVar.key}</code>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                      {envVar.category.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                      {envVar.category
+                        .split('-')
+                        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ')}
                     </span>
                   </div>
                   <p className="text-xs text-bolt-elements-textSecondary">{envVar.description}</p>
@@ -261,7 +310,8 @@ export default function EnvVarsTab() {
             <strong>For development:</strong> Set variables here or in your <code>.env.local</code> file
           </li>
           <li>
-            <strong>For production:</strong> Use your hosting provider's environment variable settings (Vercel, Netlify, Docker, etc.)
+            <strong>For production:</strong> Use your hosting provider's environment variable settings (Vercel, Netlify,
+            Docker, etc.)
           </li>
           <li>
             <strong>GitHub Models:</strong> Requires a GitHub Personal Access Token with "GitHub Models" permission
