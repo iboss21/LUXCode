@@ -10,6 +10,40 @@ interface Props {
 export default function LlmErrorAlert({ alert, clearAlert }: Props) {
   const { title, description, provider, errorType } = alert;
 
+  const huggingFaceModelHelp =
+    provider === 'HuggingFace' && errorType === 'model_unavailable' ? (
+      <ul className="list-disc pl-4 mt-3 space-y-1 text-xs text-bolt-elements-textTertiary">
+        <li>
+          Pick <strong>Qwen2.5-Coder-32B</strong> from the model dropdown (works on HF Inference Providers).
+        </li>
+        <li>
+          For <strong>free local AI</strong> with no API: Settings → Providers → Local → Ollama → Download{' '}
+          <strong>qwen2.5-coder:14b</strong>, then switch Provider to Ollama in chat.
+        </li>
+        <li>CodeLlama and many older HF models are not routed through Inference Providers.</li>
+      </ul>
+    ) : null;
+
+  const huggingFaceAuthHelp =
+    provider === 'HuggingFace' && errorType === 'authentication' ? (
+      <ul className="list-disc pl-4 mt-3 space-y-1 text-xs text-bolt-elements-textTertiary">
+        <li>
+          Create a token at{' '}
+          <a
+            href="https://huggingface.co/settings/tokens"
+            target="_blank"
+            rel="noreferrer"
+            className="text-[#c9a96e] underline"
+          >
+            huggingface.co/settings/tokens
+          </a>
+        </li>
+        <li>Use a Fine-grained token with &quot;Make calls to Inference Providers&quot; enabled</li>
+        <li>Click Change API Key, paste the full token (starts with hf_), then save</li>
+        <li>Or use Provider: Ollama for free local coding with no cloud token</li>
+      </ul>
+    ) : null;
+
   const getErrorIcon = () => {
     switch (errorType) {
       case 'authentication':
@@ -18,6 +52,8 @@ export default function LlmErrorAlert({ alert, clearAlert }: Props) {
         return 'i-ph:clock-duotone';
       case 'quota':
         return 'i-ph:warning-circle-duotone';
+      case 'model_unavailable':
+        return 'i-ph:robot-duotone';
       default:
         return 'i-ph:warning-duotone';
     }
@@ -31,6 +67,8 @@ export default function LlmErrorAlert({ alert, clearAlert }: Props) {
         return `Rate limit exceeded for ${provider}. Please wait before retrying.`;
       case 'quota':
         return `Quota exceeded for ${provider}. Please check your account limits.`;
+      case 'model_unavailable':
+        return 'This model is not available with your current provider. See steps below.';
       default:
         return 'An error occurred while processing your request.';
     }
@@ -72,6 +110,8 @@ export default function LlmErrorAlert({ alert, clearAlert }: Props) {
               className="mt-2 text-sm text-bolt-elements-textSecondary"
             >
               <p>{getErrorMessage()}</p>
+              {huggingFaceAuthHelp}
+              {huggingFaceModelHelp}
 
               {description && (
                 <div className="text-xs text-bolt-elements-textSecondary p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4">

@@ -50,12 +50,12 @@ interface ChatBoxProps {
   setProvider?: ((provider: ProviderInfo) => void) | undefined;
   model?: string | undefined;
   setModel?: ((model: string) => void) | undefined;
-  setUploadedFiles?: ((files: File[]) => void) | undefined;
-  setImageDataList?: ((dataList: string[]) => void) | undefined;
+  setUploadedFiles?: React.Dispatch<React.SetStateAction<File[]>>;
+  setImageDataList?: React.Dispatch<React.SetStateAction<string[]>>;
   handleInputChange?: ((event: React.ChangeEvent<HTMLTextAreaElement>) => void) | undefined;
   handleStop?: (() => void) | undefined;
   enhancingPrompt?: boolean | undefined;
-  enhancePrompt?: (() => void) | undefined;
+  enhancePrompt?: (() => Promise<boolean | void> | boolean | void) | undefined;
   onWebSearchResult?: (result: string) => void;
   chatMode?: 'discuss' | 'build';
   setChatMode?: (mode: 'discuss' | 'build') => void;
@@ -89,10 +89,10 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             gradientUnits="userSpaceOnUse"
             gradientTransform="rotate(-45)"
           >
-            <stop offset="0%" stopColor="#b44aff" stopOpacity="0%"></stop>
-            <stop offset="40%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="50%" stopColor="#b44aff" stopOpacity="80%"></stop>
-            <stop offset="100%" stopColor="#b44aff" stopOpacity="0%"></stop>
+            <stop offset="0%" stopColor="#c9a96e" stopOpacity="0%"></stop>
+            <stop offset="40%" stopColor="#c9a96e" stopOpacity="80%"></stop>
+            <stop offset="50%" stopColor="#e8c87a" stopOpacity="80%"></stop>
+            <stop offset="100%" stopColor="#c9a96e" stopOpacity="0%"></stop>
           </linearGradient>
           <linearGradient id="shine-gradient">
             <stop offset="0%" stopColor="white" stopOpacity="0%"></stop>
@@ -199,10 +199,13 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
 
-                reader.onload = (e) => {
-                  const base64Image = e.target?.result as string;
-                  props.setUploadedFiles?.([...props.uploadedFiles, file]);
-                  props.setImageDataList?.([...props.imageDataList, base64Image]);
+                reader.onload = (loadEvent) => {
+                  const base64Image = loadEvent.target?.result as string;
+
+                  if (base64Image) {
+                    props.setUploadedFiles?.((prev) => [...prev, file]);
+                    props.setImageDataList?.((prev) => [...prev, base64Image]);
+                  }
                 };
                 reader.readAsDataURL(file);
               }
@@ -238,7 +241,9 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
             minHeight: props.TEXTAREA_MIN_HEIGHT,
             maxHeight: props.TEXTAREA_MAX_HEIGHT,
           }}
-          placeholder={props.chatMode === 'build' ? 'How can Bolt help you today?' : 'What would you like to discuss?'}
+          placeholder={
+            props.chatMode === 'build' ? 'How can luxCoder help you today?' : 'What would you like to discuss?'
+          }
           translate="no"
         />
         <ClientOnly>
@@ -264,25 +269,30 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
           <div className="flex gap-1 items-center">
             <ColorSchemeDialog designScheme={props.designScheme} setDesignScheme={props.setDesignScheme} />
             <McpTools />
-            <IconButton title="Upload file" className="transition-all" onClick={() => props.handleFileUpload()}>
-              <div className="i-ph:paperclip text-xl"></div>
+            <IconButton title="Upload image" className="transition-all" onClick={() => props.handleFileUpload()}>
+              <div className="i-ph:image text-xl"></div>
             </IconButton>
-            <WebSearch onSearchResult={(result) => props.onWebSearchResult?.(result)} disabled={props.isStreaming} />
             <IconButton
               title="Enhance prompt"
               disabled={props.input.length === 0 || props.enhancingPrompt}
               className={classNames('transition-all', props.enhancingPrompt ? 'opacity-100' : '')}
-              onClick={() => {
-                props.enhancePrompt?.();
-                toast.success('Prompt enhanced!');
+              onClick={async () => {
+                const result = await props.enhancePrompt?.();
+
+                if (result === true) {
+                  toast.success('Prompt enhanced!');
+                } else if (result === false) {
+                  toast.error('Could not enhance prompt. Check your provider and model in Settings.');
+                }
               }}
             >
               {props.enhancingPrompt ? (
                 <div className="i-svg-spinners:90-ring-with-bg text-bolt-elements-loader-progress text-xl animate-spin"></div>
               ) : (
-                <div className="i-bolt:stars text-xl"></div>
+                <div className="i-ph:sparkle text-xl text-[#c9a96e]"></div>
               )}
             </IconButton>
+            <WebSearch onSearchResult={(result) => props.onWebSearchResult?.(result)} disabled={props.isStreaming} />
 
             <SpeechRecognitionButton
               isListening={props.isListening}
@@ -322,10 +332,14 @@ export const ChatBox: React.FC<ChatBoxProps> = (props) => {
               {props.isModelSettingsCollapsed ? <span className="text-xs">{props.model}</span> : <span />}
             </IconButton>
           </div>
-          {props.input.length > 3 ? (
+          {props.input.length > 3 || props.uploadedFiles.length > 0 ? (
             <div className="text-xs text-bolt-elements-textTertiary">
-              Use <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
-              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Return</kbd> a new line
+              {props.uploadedFiles.length > 0 && (
+                <span className="mr-2">{props.uploadedFiles.length} image(s) attached · </span>
+              )}
+              Paste images or code ·{' '}
+              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Shift</kbd> +{' '}
+              <kbd className="kdb px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-2">Enter</kbd> new line
             </div>
           ) : null}
           <SupabaseConnection />

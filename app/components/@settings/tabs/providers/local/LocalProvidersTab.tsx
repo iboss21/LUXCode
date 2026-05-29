@@ -15,6 +15,7 @@ import SetupGuide from './SetupGuide';
 import StatusDashboard from './StatusDashboard';
 import ProviderCard from './ProviderCard';
 import ModelCard from './ModelCard';
+import { FreeLocalModelDownloads } from './FreeLocalModelDownloads';
 import { OLLAMA_API_URL } from './types';
 import type { OllamaModel, LMStudioModel } from './types';
 import { Cpu, Server, BookOpen, Activity, PackageOpen, Monitor, Loader2, RotateCw, ExternalLink } from 'lucide-react';
@@ -384,6 +385,11 @@ export default function LocalProvidersTab() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <FreeLocalModelDownloads
+                      ollamaBaseUrl={provider.settings.baseUrl || OLLAMA_API_URL}
+                      installedModelNames={ollamaModels.map((m) => m.name)}
+                      onPullComplete={() => fetchOllamaModels()}
+                    />
                     {isLoadingModels ? (
                       <div className="space-y-4">
                         {Array.from({ length: 3 }).map((_, i) => (

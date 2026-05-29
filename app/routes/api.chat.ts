@@ -358,6 +358,10 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           return `Custom error: No access to model: ${modelName}. This may be because: (1) The model is not available in your region or tier, (2) Your account does not have permission to use this model, (3) The model name has changed - try selecting a different model from the dropdown. For GitHub Models, ensure you have a valid GitHub Personal Access Token with GitHub Models permissions.`;
         }
 
+        if (errorMessage.includes('not supported by any provider')) {
+          return `Custom error: This model is not available on Hugging Face Inference Providers. Try Qwen/Qwen2.5-Coder-32B-Instruct in the model dropdown, or switch Provider to Ollama for free local coding (Settings → Providers → Local → Download a model).`;
+        }
+
         if (errorMessage.includes('model') && errorMessage.includes('not found')) {
           return 'Custom error: Invalid model selected. Please check that the model name is correct and available.';
         }

@@ -43,18 +43,18 @@ export const links: LinksFunction = () => [
   },
   {
     rel: 'stylesheet',
-    href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap',
   },
 ];
 
 const inlineThemeCode = stripIndents`
-  setTutorialKitTheme();
+  setLuxCoderTheme();
 
-  function setTutorialKitTheme() {
-    let theme = localStorage.getItem('bolt_theme');
+  function setLuxCoderTheme() {
+    let theme = localStorage.getItem('luxcoder_theme') || localStorage.getItem('bolt_theme');
 
     if (!theme) {
-      theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      theme = 'dark';
     }
 
     document.querySelector('html')?.setAttribute('data-theme', theme);

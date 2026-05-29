@@ -19,66 +19,76 @@ export function usePromptEnhancer() {
     model: string,
     provider: ProviderInfo,
     apiKeys?: Record<string, string>,
-  ) => {
+  ): Promise<boolean> => {
+    if (!input.trim()) {
+      return false;
+    }
+
     setEnhancingPrompt(true);
     setPromptEnhanced(false);
 
-    const requestBody: any = {
-      message: input,
-      model,
-      provider,
-    };
-
-    if (apiKeys) {
-      requestBody.apiKeys = apiKeys;
-    }
-
-    const response = await fetch('/api/enhancer', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
-
-    const reader = response.body?.getReader();
-
     const originalInput = input;
 
-    if (reader) {
-      const decoder = new TextDecoder();
+    try {
+      const response = await fetch('/api/enhancer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: input,
+          model,
+          provider,
+          apiKeys,
+        }),
+      });
 
-      let _input = '';
-      let _error;
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        logger.error(`Enhancer failed (${response.status}):`, errorText);
 
-      try {
-        setInput('');
-
-        while (true) {
-          const { value, done } = await reader.read();
-
-          if (done) {
-            break;
-          }
-
-          _input += decoder.decode(value);
-
-          logger.trace('Set input', _input);
-
-          setInput(_input);
-        }
-      } catch (error) {
-        _error = error;
-        setInput(originalInput);
-      } finally {
-        if (_error) {
-          logger.error(_error);
-        }
-
-        setEnhancingPrompt(false);
-        setPromptEnhanced(true);
-
-        setTimeout(() => {
-          setInput(_input);
-        });
+        return false;
       }
+
+      const reader = response.body?.getReader();
+
+      if (!reader) {
+        logger.error('Enhancer returned no response body');
+        return false;
+      }
+
+      const decoder = new TextDecoder();
+      let enhanced = '';
+
+      setInput('');
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+
+        enhanced += decoder.decode(value, { stream: true });
+        setInput(enhanced);
+      }
+
+      enhanced += decoder.decode();
+
+      if (!enhanced.trim()) {
+        setInput(originalInput);
+        return false;
+      }
+
+      setInput(enhanced.trim());
+      setPromptEnhanced(true);
+
+      return true;
+    } catch (error) {
+      logger.error('Enhancer error:', error);
+      setInput(originalInput);
+
+      return false;
+    } finally {
+      setEnhancingPrompt(false);
     }
   };
 

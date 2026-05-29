@@ -76,6 +76,12 @@ export default defineConfig((config) => {
         },
       },
     },
+    server: {
+      // Listen on all interfaces so both localhost and 127.0.0.1 work on Windows
+      host: true,
+      port: Number(process.env.PORT) || 5173,
+      strictPort: true,
+    },
     test: {
       exclude: [
         '**/node_modules/**',

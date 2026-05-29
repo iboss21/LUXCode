@@ -14,6 +14,8 @@ import { useSearchFilter } from '~/lib/hooks/useSearchFilter';
 import { classNames } from '~/utils/classNames';
 import { useStore } from '@nanostores/react';
 import { profileStore } from '~/lib/stores/profile';
+import { clearSettingsPanelRequest, settingsPanelRequestStore } from '~/lib/stores/settingsPanel';
+import type { TabType } from '~/components/@settings/core/types';
 
 const menuVariants = {
   closed: {
@@ -70,6 +72,8 @@ export const Menu = () => {
   const [open, setOpen] = useState(false);
   const [dialogContent, setDialogContent] = useState<DialogContent>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<TabType | null>(null);
+  const settingsPanelRequest = useStore(settingsPanelRequestStore);
   const profile = useStore(profileStore);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -315,7 +319,18 @@ export const Menu = () => {
 
   const handleSettingsClose = () => {
     setIsSettingsOpen(false);
+    setSettingsInitialTab(null);
+    clearSettingsPanelRequest();
   };
+
+  useEffect(() => {
+    if (settingsPanelRequest.open) {
+      setIsSettingsOpen(true);
+      setSettingsInitialTab(settingsPanelRequest.tab);
+      setOpen(false);
+      clearSettingsPanelRequest();
+    }
+  }, [settingsPanelRequest.open, settingsPanelRequest.tab]);
 
   const setDialogContentWithLogging = useCallback((content: DialogContent) => {
     console.log('Setting dialog content:', content);
@@ -340,7 +355,7 @@ export const Menu = () => {
         <div className="h-12 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-800/50 bg-gray-50/50 dark:bg-gray-900/50 rounded-tr-2xl">
           <div className="text-gray-900 dark:text-white font-medium"></div>
           <div className="flex items-center gap-3">
-            <HelpButton onClick={() => window.open('https://stackblitz-labs.github.io/bolt.diy/', '_blank')} />
+            <HelpButton onClick={() => window.open('https://discord.gg/ZHMKVYyhBa', '_blank')} />
             <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
               {profile?.username || 'Guest User'}
             </span>
@@ -534,7 +549,7 @@ export const Menu = () => {
         </div>
       </motion.div>
 
-      <ControlPanel open={isSettingsOpen} onClose={handleSettingsClose} />
+      <ControlPanel open={isSettingsOpen} onClose={handleSettingsClose} initialTab={settingsInitialTab} />
     </>
   );
 };

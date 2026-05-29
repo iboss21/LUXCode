@@ -180,15 +180,17 @@ export async function selectContext(props: {
   const updateContextBuffer = response.match(/<updateContextBuffer>([\s\S]*?)<\/updateContextBuffer>/);
 
   if (!updateContextBuffer) {
-    throw new Error('Invalid response. Please follow the response format');
+    logger.warn('selectContext: model did not return updateContextBuffer XML; continuing without new context files');
+    return Object.keys(contextFiles).length > 0 ? contextFiles : {};
   }
 
+  const bufferBody = updateContextBuffer[1].trim();
   const includeFiles =
-    updateContextBuffer[1]
+    bufferBody
       .match(/<includeFile path="(.*?)"/gm)
       ?.map((x) => x.replace('<includeFile path="', '').replace('"', '')) || [];
   const excludeFiles =
-    updateContextBuffer[1]
+    bufferBody
       .match(/<excludeFile path="(.*?)"/gm)
       ?.map((x) => x.replace('<excludeFile path="', '').replace('"', '')) || [];
 
@@ -217,18 +219,20 @@ export async function selectContext(props: {
     filteredFiles[path] = files[fullPath];
   });
 
+  const totalFiles = Object.keys(filteredFiles).length;
+  logger.info(`Total new context files: ${totalFiles}, existing buffer: ${Object.keys(contextFiles).length}`);
+
   if (onFinish) {
     onFinish(resp);
   }
 
-  const totalFiles = Object.keys(filteredFiles).length;
-  logger.info(`Total files: ${totalFiles}`);
-
-  if (totalFiles == 0) {
-    throw new Error(`Bolt failed to select files`);
+  // No new files to add is valid (empty buffer = no changes needed)
+  if (totalFiles === 0) {
+    return contextFiles;
   }
 
-  return filteredFiles;
+  // Merge newly selected files with any files already in the context buffer
+  return { ...contextFiles, ...filteredFiles };
 
   // generateText({
 }

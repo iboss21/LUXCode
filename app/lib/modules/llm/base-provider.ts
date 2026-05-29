@@ -3,6 +3,7 @@ import type { ProviderInfo, ProviderConfig, ModelInfo } from './types';
 import type { IProviderSetting } from '~/types/model';
 import { createOpenAI } from '@ai-sdk/openai';
 import { LLMManager } from './manager';
+import { normalizeApiKey } from '~/utils/apiKeyValidation';
 
 /** Default timeout for model listing API calls (5 seconds) */
 const MODEL_FETCH_TIMEOUT = 5_000;
@@ -90,8 +91,9 @@ export abstract class BaseProvider implements ProviderInfo {
     }
 
     const apiTokenKey = this.config.apiTokenKey || defaultApiTokenKey;
-    const apiKey =
+    const rawKey =
       apiKeys?.[this.name] || serverEnv?.[apiTokenKey] || process?.env?.[apiTokenKey] || manager.env?.[apiTokenKey];
+    const apiKey = normalizeApiKey(rawKey);
 
     return {
       baseUrl,

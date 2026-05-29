@@ -4,27 +4,7 @@ import type { MCPConfig } from '~/lib/services/mcpService';
 import { toast } from 'react-toastify';
 import { useMCPStore } from '~/lib/stores/mcp';
 import McpServerList from '~/components/@settings/tabs/mcp/McpServerList';
-
-const EXAMPLE_MCP_CONFIG: MCPConfig = {
-  mcpServers: {
-    everything: {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', '@modelcontextprotocol/server-everything'],
-    },
-    deepwiki: {
-      type: 'streamable-http',
-      url: 'https://mcp.deepwiki.com/mcp',
-    },
-    'local-sse': {
-      type: 'sse',
-      url: 'http://localhost:8000/sse',
-      headers: {
-        Authorization: 'Bearer mytoken123',
-      },
-    },
-  },
-};
+import { MCP_PRESETS, type McpPresetId } from '~/lib/mcp/presets';
 
 export default function McpTab() {
   const settings = useMCPStore((state) => state.settings);
@@ -32,6 +12,7 @@ export default function McpTab() {
   const serverTools = useMCPStore((state) => state.serverTools);
   const initialize = useMCPStore((state) => state.initialize);
   const updateSettings = useMCPStore((state) => state.updateSettings);
+  const applyPreset = useMCPStore((state) => state.applyPreset);
   const checkServersAvailabilities = useMCPStore((state) => state.checkServersAvailabilities);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +21,7 @@ export default function McpTab() {
   const [error, setError] = useState<string | null>(null);
   const [isCheckingServers, setIsCheckingServers] = useState(false);
   const [expandedServer, setExpandedServer] = useState<string | null>(null);
+  const [applyingPreset, setApplyingPreset] = useState<McpPresetId | null>(null);
 
   useEffect(() => {
     if (!isInitialized) {
@@ -94,8 +76,25 @@ export default function McpTab() {
   };
 
   const handleLoadExample = () => {
-    setMCPConfigText(JSON.stringify(EXAMPLE_MCP_CONFIG, null, 2));
+    setMCPConfigText(JSON.stringify(MCP_PRESETS.demo.config, null, 2));
+    setMaxLLMSteps(MCP_PRESETS.demo.maxLLMSteps);
     setError(null);
+  };
+
+  const handleApplyPreset = async (presetId: McpPresetId) => {
+    setApplyingPreset(presetId);
+    setError(null);
+
+    try {
+      await applyPreset(presetId);
+      toast.success(`${MCP_PRESETS[presetId].label} enabled`);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(message);
+      toast.error('Failed to apply MCP preset');
+    } finally {
+      setApplyingPreset(null);
+    }
   };
 
   const checkServerAvailability = async () => {
@@ -123,6 +122,30 @@ export default function McpTab() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      <section className="rounded-lg border border-[rgba(201,169,110,0.25)] bg-[rgba(201,169,110,0.06)] p-4 space-y-3">
+        <h2 className="text-base font-medium text-bolt-elements-textPrimary">Quick enable presets</h2>
+        <p className="text-xs text-bolt-elements-textSecondary">
+          One-click tool packs for luxCoder. Uses npx on your PC — first run may download packages.
+        </p>
+        <div className="grid gap-2">
+          {(Object.keys(MCP_PRESETS) as McpPresetId[]).map((presetId) => {
+            const preset = MCP_PRESETS[presetId];
+
+            return (
+              <button
+                key={presetId}
+                disabled={!!applyingPreset}
+                onClick={() => handleApplyPreset(presetId)}
+                className="text-left p-3 rounded-lg border border-bolt-elements-borderColor hover:bg-bolt-elements-background-depth-2 disabled:opacity-50"
+              >
+                <span className="text-sm font-medium text-bolt-elements-textPrimary">{preset.label}</span>
+                <span className="block text-xs text-bolt-elements-textSecondary mt-0.5">{preset.description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       <section aria-labelledby="server-status-heading">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-base font-medium text-bolt-elements-textPrimary">MCP Servers Configured</h2>{' '}

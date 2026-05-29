@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 
 interface ScreenshotStateManagerProps {
-  setUploadedFiles?: (files: File[]) => void;
-  setImageDataList?: (dataList: string[]) => void;
+  setUploadedFiles?: React.Dispatch<React.SetStateAction<File[]>>;
+  setImageDataList?: React.Dispatch<React.SetStateAction<string[]>>;
   uploadedFiles: File[];
   imageDataList: string[];
 }

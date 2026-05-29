@@ -1,6 +1,10 @@
 import blitzPlugin from '@blitz/eslint-plugin';
 import { jsFileExtensions } from '@blitz/eslint-plugin/dist/configs/javascript.js';
 import { getNamingConventionRule, tsFileExtensions } from '@blitz/eslint-plugin/dist/configs/typescript.js';
+import { platform } from 'node:process';
+
+/** Windows checkouts often use CRLF; CI/Linux still enforces LF via .gitattributes */
+const isWindows = platform === 'win32';
 
 export default [
   {
@@ -21,7 +25,7 @@ export default [
       semi: ['error', 'always'],
       curly: ['error'],
       'no-eval': ['error'],
-      'linebreak-style': ['error', 'unix'],
+      'linebreak-style': isWindows ? 'off' : ['error', 'unix'],
       'arrow-spacing': ['error', { before: true, after: true }],
     },
   },

@@ -162,6 +162,20 @@ Node.js is required to run the application.
 
 You have two options for running Bolt.DIY: directly on your machine or using Docker.
 
+### Option 1a: Windows browser + free local AI (Ollama / Hugging Face)
+
+1. Install **Node.js LTS** and (recommended) **Ollama** from https://ollama.com/download  
+2. Pull a model: `ollama pull qwen2.5-coder`  
+3. **Double-click** `start-luxcode.bat` in the repo root, or run:
+
+   ```powershell
+   pnpm run local:windows
+   ```
+
+4. In the app: **Settings → Providers → Local → Ollama** (enable). For Hugging Face, add `HuggingFace_API_KEY` to `.env.local` and enable under **Cloud**.
+
+Full guide: [Windows local + free AI](./docs/windows-local-free-ai.md)
+
 ### Option 1: Direct Installation (Recommended for Beginners)
 
 1. **Install Package Manager (pnpm)**:

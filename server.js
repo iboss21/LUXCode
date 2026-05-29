@@ -32,7 +32,7 @@ const IS_PROD = MODE === 'production';
 const PORT = process.env.PORT || 5173;
 const HOST = process.env.HOST || '0.0.0.0';
 
-console.log('🚀 Starting LUXCode Node.js Server...');
+console.log('🚀 Starting luxCoder Node.js Server...');
 console.log(`   Mode: ${MODE.toUpperCase()}`);
 console.log(`   Port: ${PORT}`);
 console.log(`   Host: ${HOST}`);
@@ -126,7 +126,7 @@ async function startServer() {
     // Start server
     const server = app.listen(PORT, HOST, () => {
       console.log('');
-      console.log('🎉 LUXCode is running!');
+      console.log('🎉 luxCoder is running!');
       console.log('');
       console.log(`   ➜ Local:   http://localhost:${PORT}`);
       console.log(`   ➜ Network: http://${HOST}:${PORT}`);

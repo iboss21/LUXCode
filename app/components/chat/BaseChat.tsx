@@ -33,6 +33,7 @@ import { ChatBox } from './ChatBox';
 import type { DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import LlmErrorAlert from './LLMApiAlert';
+import { cursorAfterInsertion, formatPastedSnippet, insertTextAtCursor } from '~/utils/pasteFormatting';
 
 const TEXTAREA_MIN_HEIGHT = 76;
 
@@ -57,13 +58,13 @@ interface BaseChatProps {
   handleStop?: () => void;
   sendMessage?: (event: React.UIEvent, messageInput?: string) => void;
   handleInputChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  enhancePrompt?: () => void;
+  enhancePrompt?: () => Promise<boolean | void> | boolean | void;
   importChat?: (description: string, messages: Message[]) => Promise<void>;
   exportChat?: () => void;
   uploadedFiles?: File[];
-  setUploadedFiles?: (files: File[]) => void;
+  setUploadedFiles?: React.Dispatch<React.SetStateAction<File[]>>;
   imageDataList?: string[];
-  setImageDataList?: (dataList: string[]) => void;
+  setImageDataList?: React.Dispatch<React.SetStateAction<string[]>>;
   actionAlert?: ActionAlert;
   clearAlert?: () => void;
   supabaseAlert?: SupabaseAlert;
@@ -289,21 +290,33 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
       }
     };
 
+    const addImageAttachment = (file: File, base64Image: string) => {
+      setUploadedFiles?.((prev) => [...prev, file]);
+      setImageDataList?.((prev) => [...prev, base64Image]);
+    };
+
     const handleFileUpload = () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
+      input.multiple = true;
 
       input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
+        const files = Array.from((e.target as HTMLInputElement).files || []);
 
-        if (file) {
+        for (const file of files) {
+          if (!file.type.startsWith('image/')) {
+            continue;
+          }
+
           const reader = new FileReader();
 
-          reader.onload = (e) => {
-            const base64Image = e.target?.result as string;
-            setUploadedFiles?.([...uploadedFiles, file]);
-            setImageDataList?.([...imageDataList, base64Image]);
+          reader.onload = (loadEvent) => {
+            const base64Image = loadEvent.target?.result as string;
+
+            if (base64Image) {
+              addImageAttachment(file, base64Image);
+            }
           };
           reader.readAsDataURL(file);
         }
@@ -315,29 +328,50 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
     const handlePaste = async (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
 
-      if (!items) {
-        return;
+      if (items) {
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            e.preventDefault();
+
+            const file = item.getAsFile();
+
+            if (file) {
+              const reader = new FileReader();
+
+              reader.onload = (loadEvent) => {
+                const base64Image = loadEvent.target?.result as string;
+
+                if (base64Image) {
+                  addImageAttachment(file, base64Image);
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+
+            return;
+          }
+        }
       }
 
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault();
+      const plainText = e.clipboardData?.getData('text/plain') ?? '';
+      const formatted = formatPastedSnippet(plainText);
+      const textarea = textareaRef?.current;
 
-          const file = item.getAsFile();
+      if (formatted && textarea && handleInputChange) {
+        e.preventDefault();
 
-          if (file) {
-            const reader = new FileReader();
+        const cursorStart = textarea.selectionStart ?? textarea.value.length;
+        const newValue = insertTextAtCursor(textarea, formatted);
 
-            reader.onload = (e) => {
-              const base64Image = e.target?.result as string;
-              setUploadedFiles?.([...uploadedFiles, file]);
-              setImageDataList?.([...imageDataList, base64Image]);
-            };
-            reader.readAsDataURL(file);
-          }
+        handleInputChange({
+          target: { value: newValue },
+        } as React.ChangeEvent<HTMLTextAreaElement>);
 
-          break;
-        }
+        requestAnimationFrame(() => {
+          const nextCursor = cursorAfterInsertion(cursorStart, formatted);
+          textarea.setSelectionRange(nextCursor, nextCursor);
+          textarea.focus();
+        });
       }
     };
 
@@ -351,12 +385,18 @@ export const BaseChat = React.forwardRef<HTMLDivElement, BaseChatProps>(
         <div className="flex flex-col lg:flex-row overflow-y-auto w-full h-full">
           <div className={classNames(styles.Chat, 'flex flex-col flex-grow lg:min-w-[var(--chat-min-width)] h-full')}>
             {!chatStarted && (
-              <div id="intro" className="mt-[16vh] max-w-2xl mx-auto text-center px-4 lg:px-0">
-                <h1 className="text-3xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
-                  Where ideas begin
+              <div id="intro" className="mt-[12vh] max-w-3xl mx-auto text-center px-4 lg:px-0">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#c9a96e] mb-4 animate-fade-in font-medium">
+                  Local-First · Free AI · Open Source
+                </p>
+                <h1 className="text-4xl lg:text-6xl font-bold text-bolt-elements-textPrimary mb-4 animate-fade-in">
+                  <span className="text-[#c9a96e]">lux</span>Coder
                 </h1>
-                <p className="text-md lg:text-xl mb-8 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
-                  Bring ideas to life in seconds or get help on existing projects.
+                <p className="text-md lg:text-xl mb-2 text-bolt-elements-textSecondary animate-fade-in animation-delay-200">
+                  Your local AI vibe coding studio — build full-stack apps in the browser.
+                </p>
+                <p className="text-sm text-bolt-elements-textTertiary animate-fade-in animation-delay-200">
+                  Ollama, Hugging Face, and 19+ providers. Zero cloud required.
                 </p>
               </div>
             )}

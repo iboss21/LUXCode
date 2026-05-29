@@ -1,20 +1,24 @@
 {
-  "name": "bolt",
-  "description": "An AI Agent",
+  "name": "luxcoder",
+  "description": "luxCoder — local AI vibe coding studio by The Lux Empire",
   "private": true,
   "license": "MIT",
   "sideEffects": false,
   "type": "module",
   "version": "1.0.0",
   "author": {
-    "name": "bolt.diy team",
-    "email": "maintainers@bolt.diy"
+    "name": "The Lux Empire",
+    "email": "maintainers@wolves.land"
   },
   "scripts": {
     "dev": "node pre-start.cjs && remix vite:dev",
     "dev:wrangler": "node pre-start.cjs && wrangler pages dev --compatibility-date=2025-03-28 --compatibility-flag=nodejs_compat",
+    "local:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows-local.ps1",
+    "stop:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/stop-luxcode-dev.ps1",
+    "setup:models": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/setup-vibe-coding-models.ps1",
     "build": "remix vite:build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "cross-env NODE_ENV=production node server.js",
+    "start:node": "cross-env NODE_ENV=production node server.js",
     "start:windows": "wrangler pages dev ./build/client",
     "start:unix": "bindings=$(./bindings.sh) && wrangler pages dev ./build/client $bindings",
     "start:wrangler": "node -e \"const { spawn } = require('child_process'); const isWindows = process.platform === 'win32'; const cmd = isWindows ? 'npm run start:windows' : 'npm run start:unix'; const child = spawn(cmd, { shell: true, stdio: 'inherit' }); child.on('exit', code => process.exit(code));\"",

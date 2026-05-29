@@ -107,7 +107,7 @@ export function DataVisualization({ chats }: DataVisualizationProps) {
   };
 
   const getChartColors = (index: number) => {
-    // Define color palettes based on Bolt design tokens
+    // Define color palettes based on luxCoder design tokens
     const baseColors = [
       // Indigo
       {

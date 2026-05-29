@@ -286,6 +286,12 @@ export const ChatImpl = memo(
         else if (errorMessageLower.includes('quota')) {
           errorType = 'quota';
           title = 'Quota Exceeded';
+        } else if (
+          errorMessageLower.includes('not supported by any provider') ||
+          errorMessageLower.includes('not available on hugging face inference')
+        ) {
+          errorType = 'model_unavailable';
+          title = 'Model Not Available';
         }
         // Check for response processing errors (not auth issues)
         else if (
@@ -668,7 +674,7 @@ export const ChatImpl = memo(
             content: parsedMessages[i] || '',
           };
         })}
-        enhancePrompt={() => {
+        enhancePrompt={async () =>
           enhancePrompt(
             input,
             (input) => {
@@ -678,8 +684,8 @@ export const ChatImpl = memo(
             model,
             provider,
             apiKeys,
-          );
-        }}
+          )
+        }
         uploadedFiles={uploadedFiles}
         setUploadedFiles={setUploadedFiles}
         imageDataList={imageDataList}

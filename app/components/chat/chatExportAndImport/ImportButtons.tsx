@@ -5,7 +5,7 @@ import { Button } from '~/components/ui/Button';
 import { classNames } from '~/utils/classNames';
 
 type ChatData = {
-  messages?: Message[]; // Standard Bolt format
+  messages?: Message[]; // Standard luxCoder export format
   description?: string; // Optional description
 };
 

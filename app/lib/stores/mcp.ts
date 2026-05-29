@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { MCPConfig, MCPServerTools } from '~/lib/services/mcpService';
+import { MCP_PRESETS, mergeMcpConfigs, type McpPresetId } from '~/lib/mcp/presets';
 
 const MCP_SETTINGS_KEY = 'mcp_settings';
 const isBrowser = typeof window !== 'undefined';
@@ -10,7 +11,7 @@ type MCPSettings = {
 };
 
 const defaultSettings = {
-  maxLLMSteps: 5,
+  maxLLMSteps: 10,
   mcpConfig: {
     mcpServers: {},
   },
@@ -27,6 +28,7 @@ type Store = {
 type Actions = {
   initialize: () => Promise<void>;
   updateSettings: (settings: MCPSettings) => Promise<void>;
+  applyPreset: (presetId: McpPresetId, options?: { replace?: boolean }) => Promise<void>;
   checkServersAvailabilities: () => Promise<void>;
 };
 
@@ -82,6 +84,19 @@ export const useMCPStore = create<Store & Actions>((set, get) => ({
     } finally {
       set(() => ({ isUpdatingConfig: false }));
     }
+  },
+  applyPreset: async (presetId, options) => {
+    const preset = MCP_PRESETS[presetId];
+    const current = get().settings;
+
+    const mcpConfig = options?.replace ? preset.config : mergeMcpConfigs(current.mcpConfig, preset.config);
+
+    await get().updateSettings({
+      mcpConfig,
+      maxLLMSteps: Math.max(current.maxLLMSteps, preset.maxLLMSteps),
+    });
+
+    await get().checkServersAvailabilities();
   },
   checkServersAvailabilities: async () => {
     const response = await fetch('/api/mcp-check', {
