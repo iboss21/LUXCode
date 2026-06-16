@@ -11,6 +11,8 @@
 **Local-first AI vibe coding studio** — build full-stack apps in your browser with free local models (Ollama), cloud APIs, or both. A [bolt.diy](https://github.com/stackblitz-labs/bolt.diy) fork rebranded and tuned for **The Lux Empire** by [iboss21/LUXCode](https://github.com/iboss21/LUXCode).
 
 [![luxCoder — Local AI Vibe Coding Studio](./public/luxcoder-banner.png)](https://github.com/iboss21/LUXCode)
+<img width="1919" height="1003" alt="image" src="https://github.com/user-attachments/assets/7c945eb9-5388-4d66-92cd-07e45d229823" />
+
 
 > Chat on the left. Code, terminal, and live preview on the right. Pick **Ollama** for $0 API spend, or plug in OpenAI, Anthropic, Hugging Face, and 19+ other providers.
 
