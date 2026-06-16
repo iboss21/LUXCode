@@ -90,36 +90,61 @@ export class LLMManager {
       enabledProviders = enabledProviders.filter((p) => providerSettings[p].enabled);
     }
 
-    // Get dynamic models from all providers that support them
+    const LOCAL_PROVIDERS = new Set(['OmniRoute', 'Ollama', 'LMStudio']);
+
+    /*
+     * Only attempt dynamic models for:
+     * - Local providers (they handle "not running" gracefully and return [])
+     * - Cloud providers that have at least one form of api key present
+     */
+    const providersToFetchDynamic = Array.from(this._providers.values()).filter((provider) => {
+      if (!enabledProviders.includes(provider.name)) {
+        return false;
+      }
+
+      if (!provider.getDynamicModels) {
+        return false;
+      }
+
+      if (LOCAL_PROVIDERS.has(provider.name)) {
+        return true;
+      }
+
+      // Cloud: require a key somewhere (apiKeys, providerSettings, or serverEnv for its token key)
+      const tokenKey = (provider as any).config?.apiTokenKey || '';
+      const hasKey =
+        !!apiKeys?.[provider.name] ||
+        !!(providerSettings?.[provider.name] as any)?.[tokenKey] ||
+        !!(serverEnv && tokenKey && serverEnv[tokenKey]);
+
+      return hasKey;
+    }) as Array<BaseProvider & Required<Pick<ProviderInfo, 'getDynamicModels'>>>;
+
+    // Get dynamic models from the filtered set
     const dynamicModels = await Promise.all(
-      Array.from(this._providers.values())
-        .filter((provider) => enabledProviders.includes(provider.name))
-        .filter(
-          (provider): provider is BaseProvider & Required<Pick<ProviderInfo, 'getDynamicModels'>> =>
-            !!provider.getDynamicModels,
-        )
-        .map(async (provider) => {
-          const cachedModels = provider.getModelsFromCache(options);
+      providersToFetchDynamic.map(async (provider) => {
+        const cachedModels = provider.getModelsFromCache(options);
 
-          if (cachedModels) {
-            return cachedModels;
-          }
+        if (cachedModels) {
+          return cachedModels;
+        }
 
-          const dynamicModels = await provider
-            .getDynamicModels(apiKeys, providerSettings?.[provider.name], serverEnv)
-            .then((models) => {
-              logger.info(`Caching ${models.length} dynamic models for ${provider.name}`);
-              provider.storeDynamicModels(options, models);
+        const dynamicModels = await provider
+          .getDynamicModels(apiKeys, providerSettings?.[provider.name], serverEnv)
+          .then((models) => {
+            logger.debug(`Caching ${models.length} dynamic models for ${provider.name}`);
+            provider.storeDynamicModels(options, models);
 
-              return models;
-            })
-            .catch((err) => {
-              logger.error(`Error getting dynamic models ${provider.name} :`, err);
-              return [];
-            });
+            return models;
+          })
+          .catch((err) => {
+            // Expected for providers without keys or temporarily unreachable — keep quiet in local-only usage
+            logger.debug(`Error getting dynamic models ${provider.name} :`, err);
+            return [];
+          });
 
-          return dynamicModels;
-        }),
+        return dynamicModels;
+      }),
     );
     const staticModels = Array.from(this._providers.values()).flatMap((p) => p.staticModels || []);
     const dynamicModelsFlat = dynamicModels.flat();
@@ -158,6 +183,8 @@ export class LLMManager {
 
     const { apiKeys, providerSettings, serverEnv } = options;
 
+    const LOCAL_PROVIDERS = new Set(['OmniRoute', 'Ollama', 'LMStudio']);
+
     const cachedModels = provider.getModelsFromCache({
       apiKeys,
       providerSettings,
@@ -165,22 +192,35 @@ export class LLMManager {
     });
 
     if (cachedModels) {
-      logger.info(`Found ${cachedModels.length} cached models for ${provider.name}`);
+      logger.debug(`Found ${cachedModels.length} cached models for ${provider.name}`);
       return [...cachedModels, ...staticModels];
     }
 
-    logger.info(`Getting dynamic models for ${provider.name}`);
+    // For non-local providers, if no credential is present in this call, don't attempt (prevents spam for cloud keys in local setups)
+    const tokenKey = (provider as any).config?.apiTokenKey || '';
+    const isLocal = LOCAL_PROVIDERS.has(provider.name);
+    const hasKeyForThisCall =
+      isLocal ||
+      !!apiKeys?.[provider.name] ||
+      !!(providerSettings?.[provider.name] as any)?.[tokenKey] ||
+      !!(serverEnv && tokenKey && serverEnv[tokenKey]);
+
+    if (!hasKeyForThisCall) {
+      return staticModels;
+    }
+
+    logger.debug(`Getting dynamic models for ${provider.name}`);
 
     const dynamicModels = await provider
       .getDynamicModels?.(apiKeys, providerSettings?.[provider.name], serverEnv)
       .then((models) => {
-        logger.info(`Got ${models.length} dynamic models for ${provider.name}`);
+        logger.debug(`Got ${models.length} dynamic models for ${provider.name}`);
         provider.storeDynamicModels(options, models);
 
         return models;
       })
       .catch((err) => {
-        logger.error(`Error getting dynamic models ${provider.name} :`, err);
+        logger.debug(`Error getting dynamic models ${provider.name} :`, err);
         return [];
       });
     const dynamicModelsName = dynamicModels.map((d) => d.name);
@@ -201,6 +241,16 @@ export class LLMManager {
   }
 
   getDefaultProvider(): BaseProvider {
+    const preferred = ['OmniRoute', 'Ollama', 'LMStudio'];
+
+    for (const name of preferred) {
+      const provider = this._providers.get(name);
+
+      if (provider) {
+        return provider;
+      }
+    }
+
     const firstProvider = this._providers.values().next().value;
 
     if (!firstProvider) {

@@ -1,0 +1,287 @@
+/* ============================================================
+   LXR Cursor Settings — v0/Cursor inspired, LXR native
+   Drop-in polish for lxr-medic (and future LXR resources)
+   Uses existing :root tokens + cfg-* primitives from your style.css
+   ============================================================ */
+
+.lxr-settings-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 520px;
+}
+
+.lxr-settings-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px 12px;
+  border-bottom: 1px solid var(--cfg-edge-soft);
+  margin-bottom: 12px;
+}
+
+.lxr-settings-search {
+  flex: 1;
+  min-width: 240px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--cfg-edge-soft);
+  color: var(--text);
+  padding: 9px 14px 9px 36px;
+  border-radius: 999px;
+  font-size: 13px;
+  background-image: var(--img-search-bg);
+  background-repeat: no-repeat;
+  background-position: 12px center;
+  background-size: 14px;
+}
+
+.lxr-settings-search:focus {
+  outline: none;
+  border-color: rgba(201,169,110,0.4);
+  background-color: rgba(0,0,0,0.45);
+}
+
+.lxr-settings-layout {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+}
+
+.lxr-settings-nav {
+  width: 198px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 8px;
+  border-right: 1px solid var(--cfg-edge-soft);
+  overflow: auto;
+}
+
+.lxr-settings-nav .cfg-nav__btn {
+  font-size: 12px;
+  padding: 8px 12px;
+  min-height: 34px;
+}
+
+.lxr-settings-content {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding-right: 8px;
+}
+
+.lxr-settings-category {
+  margin-bottom: 28px;
+}
+
+.lxr-settings-category-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.lxr-settings-category-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  color: #f7edd9;
+  text-transform: uppercase;
+}
+
+.lxr-settings-category-head .lxr-settings-count {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.lxr-setting-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cfg-edge-soft);
+}
+
+.lxr-setting-row:last-child { border-bottom: none; }
+
+.lxr-setting-label {
+  min-width: 0;
+}
+
+.lxr-setting-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #f7edd9;
+  margin-bottom: 2px;
+}
+
+.lxr-setting-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+  max-width: 52ch;
+}
+
+.lxr-setting-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 180px;
+}
+
+/* Premium Cursor-style switch (vanilla, gold accent, no extra images) */
+.lxr-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.lxr-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.lxr-switch .track {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid var(--cfg-edge);
+  border-radius: 999px;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.lxr-switch .thumb {
+  position: absolute;
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 2px;
+  background: #e8e0d2;
+  border-radius: 50%;
+  transition: transform .15s ease, background .15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+.lxr-switch input:checked + .track {
+  background: rgba(201,169,110,0.25);
+  border-color: rgba(201,169,110,0.5);
+}
+
+.lxr-switch input:checked + .track .thumb {
+  background: #c9a96e;
+  transform: translateX(21px);
+}
+
+.lxr-switch:hover .track {
+  border-color: rgba(255,255,255,0.28);
+}
+
+/* Number + range combo (Cursor-like) */
+.lxr-num {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lxr-num input[type="number"] {
+  width: 92px;
+  text-align: right;
+}
+
+.lxr-num .unit {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 28px;
+}
+
+/* Small action buttons inside rows */
+.lxr-setting-inline-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid var(--cfg-edge);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.lxr-setting-inline-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(201,169,110,0.35);
+}
+
+/* Profile quick picks (smart feature — one click bulk tuning) */
+.lxr-profiles {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.lxr-profile-btn {
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--img-menu-btn) center / 100% 100% no-repeat;
+  color: #f7edd9;
+  border: none;
+  cursor: pointer;
+  letter-spacing: .02em;
+}
+
+.lxr-profile-btn:hover,
+.lxr-profile-btn.active {
+  background: var(--img-menu-btn-2) center / 100% 100% no-repeat;
+  color: #100e0c;
+}
+
+/* Footer bar */
+.lxr-settings-footer {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cfg-edge-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lxr-settings-dirty {
+  font-size: 12px;
+  color: #c9a96e;
+}
+
+.lxr-settings-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Make sure existing cfg- things look great inside settings */
+.lxr-settings-content .cfg-input {
+  max-width: 260px;
+}
+
+.lxr-settings-content .cfg-label {
+  text-transform: none;
+  font-size: 12px;
+  letter-spacing: normal;
+  margin-bottom: 4px;
+}
+
+/* Search highlight */
+.lxr-settings-content mark {
+  background: rgba(201,169,110,0.35);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}

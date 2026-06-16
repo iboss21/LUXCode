@@ -1,4 +1,5 @@
 import type { ProviderInfo } from '~/types/model';
+import { PROVIDER_LIST } from '~/utils/constants';
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { ModelInfo } from '~/lib/modules/llm/types';
@@ -130,6 +131,7 @@ export const ModelSelector = ({
   const providerOptionsRef = useRef<(HTMLDivElement | null)[]>([]);
   const providerDropdownRef = useRef<HTMLDivElement>(null);
   const [showFreeModelsOnly, setShowFreeModelsOnly] = useState(false);
+  const [providerFilter, setProviderFilter] = useState<string>('all');
 
   type ConnectionStatus = 'unknown' | 'connected' | 'disconnected';
 
@@ -193,7 +195,10 @@ export const ModelSelector = ({
   }, []);
 
   const filteredModels = useMemo(() => {
-    const baseModels = [...modelList].filter((e) => e.provider === provider?.name && e.name);
+    const enabledProviders = new Set(providerList.map((p) => p.name));
+    const baseModels = [...modelList].filter(
+      (e) => e.name && enabledProviders.has(e.provider) && (providerFilter === 'all' || e.provider === providerFilter),
+    );
 
     return baseModels
       .filter((model) => {
@@ -230,7 +235,7 @@ export const ModelSelector = ({
 
         return a.label.localeCompare(b.label);
       });
-  }, [modelList, provider?.name, showFreeModelsOnly, debouncedModelSearchQuery]);
+  }, [modelList, providerList, providerFilter, showFreeModelsOnly, debouncedModelSearchQuery]);
 
   const filteredProviders = useMemo(() => {
     if (!debouncedProviderSearchQuery) {
@@ -314,6 +319,12 @@ export const ModelSelector = ({
 
         if (focusedModelIndex >= 0 && focusedModelIndex < filteredModels.length) {
           const selectedModel = filteredModels[focusedModelIndex];
+          const modelProvider = PROVIDER_LIST.find((p) => p.name === selectedModel.provider);
+
+          if (modelProvider && setProvider) {
+            setProvider(modelProvider as ProviderInfo);
+          }
+
           setModel?.(selectedModel.name);
           setIsModelDropdownOpen(false);
           setModelSearchQuery('');
@@ -420,15 +431,22 @@ export const ModelSelector = ({
 
     if (provider && !providerList.some((p) => p.name === provider.name)) {
       const firstEnabledProvider = providerList[0];
-      setProvider?.(firstEnabledProvider);
 
-      const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
+      // Guard by name to avoid re-render storms when lists are recomputed by discovery / settings updates
+      if (firstEnabledProvider?.name !== provider.name) {
+        setProvider?.(firstEnabledProvider);
 
-      if (firstModel) {
-        setModel?.(firstModel.name);
+        const firstModel = modelList.find((m) => m.provider === firstEnabledProvider.name);
+
+        if (firstModel && firstModel.name !== model) {
+          setModel?.(firstModel.name);
+        }
       }
     }
-  }, [providerList, provider, setProvider, modelList, setModel]);
+
+    // Intentionally omit setProvider/setModel — unstable refs caused infinite update loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [providerList.map((p) => p.name).join(','), provider?.name, modelList.length]);
 
   if (providerList.length === 0) {
     return (
@@ -658,7 +676,19 @@ export const ModelSelector = ({
           tabIndex={0}
         >
           <div className="flex items-center justify-between">
-            <div className="truncate">{modelList.find((m) => m.name === model)?.label || 'Select model'}</div>
+            <div className="truncate">
+              {(() => {
+                const selected = modelList.find((m) => m.name === model && m.provider === provider?.name);
+
+                if (selected) {
+                  return selected.label;
+                }
+
+                const any = modelList.find((m) => m.name === model);
+
+                return any ? `${any.label} · ${any.provider}` : model || 'Select model';
+              })()}
+            </div>
             <div
               className={classNames(
                 'i-ph:caret-down w-4 h-4 text-bolt-elements-textSecondary opacity-75',
@@ -675,6 +705,44 @@ export const ModelSelector = ({
             id="model-listbox"
           >
             <div className="px-2 pb-2 space-y-2">
+              <div className="flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProviderFilter('all');
+                  }}
+                  className={classNames(
+                    'px-2 py-0.5 rounded text-xs border transition-colors',
+                    providerFilter === 'all'
+                      ? 'border-[rgba(201,169,110,0.5)] text-[#c9a96e] bg-[rgba(201,169,110,0.08)]'
+                      : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                  )}
+                >
+                  All providers
+                </button>
+                {providerList
+                  .filter((p) => LOCAL_PROVIDERS.includes(p.name) || modelList.some((m) => m.provider === p.name))
+                  .map((p) => (
+                    <button
+                      key={p.name}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setProviderFilter(p.name);
+                      }}
+                      className={classNames(
+                        'px-2 py-0.5 rounded text-xs border transition-colors',
+                        providerFilter === p.name
+                          ? 'border-[rgba(201,169,110,0.5)] text-[#c9a96e] bg-[rgba(201,169,110,0.08)]'
+                          : 'border-bolt-elements-borderColor text-bolt-elements-textSecondary',
+                      )}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+              </div>
+
               {/* Free Models Filter Toggle - Only show for OpenRouter */}
               {provider?.name === 'OpenRouter' && (
                 <div className="flex items-center gap-2">
@@ -820,6 +888,13 @@ export const ModelSelector = ({
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
+
+                      const modelProvider = PROVIDER_LIST.find((p) => p.name === modelOption.provider);
+
+                      if (modelProvider && setProvider) {
+                        setProvider(modelProvider as ProviderInfo);
+                      }
+
                       setModel?.(modelOption.name);
                       setIsModelDropdownOpen(false);
                       setModelSearchQuery('');
@@ -837,6 +912,9 @@ export const ModelSelector = ({
                           />
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-bolt-elements-background-depth-3 text-bolt-elements-textTertiary">
+                            {modelOption.provider}
+                          </span>
                           <span className="text-xs text-bolt-elements-textTertiary">
                             {formatContextSize(modelOption.maxTokenAllowed)} tokens
                           </span>

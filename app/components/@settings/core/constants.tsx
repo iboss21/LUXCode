@@ -1,5 +1,5 @@
 import type { TabType } from './types';
-import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, Key } from 'lucide-react';
+import { User, Settings, Bell, Star, Database, Cloud, Laptop, Github, Wrench, List, Key, Server } from 'lucide-react';
 
 // GitLab icon component
 const GitLabIcon = () => (
@@ -51,6 +51,7 @@ export const TAB_ICONS: Record<TabType, React.ComponentType<{ className?: string
   netlify: () => <NetlifyIcon />,
   vercel: () => <VercelIcon />,
   supabase: () => <SupabaseIcon />,
+  'self-hosted': Server,
   'event-logs': List,
   mcp: Wrench,
   'env-vars': Key,
@@ -69,6 +70,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   netlify: 'Netlify',
   vercel: 'Vercel',
   supabase: 'Supabase',
+  'self-hosted': 'Self-Hosted / Coolify',
   'event-logs': 'Event Logs',
   mcp: 'MCP Servers',
   'env-vars': 'Environment Variables',
@@ -87,6 +89,7 @@ export const TAB_DESCRIPTIONS: Record<TabType, string> = {
   netlify: 'Configure Netlify deployment settings',
   vercel: 'Manage Vercel projects and deployments',
   supabase: 'Setup Supabase database connection',
+  'self-hosted': 'Connect Coolify and your own Supabase, Appwrite, n8n, etc.',
   'event-logs': 'View system events and logs',
   mcp: 'Configure MCP (Model Context Protocol) servers',
   'env-vars': 'Configure environment variables for API keys and services',
@@ -104,9 +107,10 @@ export const DEFAULT_TAB_CONFIG = [
   { id: 'netlify', visible: true, window: 'user' as const, order: 7 },
   { id: 'vercel', visible: true, window: 'user' as const, order: 8 },
   { id: 'supabase', visible: true, window: 'user' as const, order: 9 },
-  { id: 'notifications', visible: true, window: 'user' as const, order: 10 },
-  { id: 'event-logs', visible: true, window: 'user' as const, order: 11 },
-  { id: 'mcp', visible: true, window: 'user' as const, order: 12 },
+  { id: 'self-hosted', visible: true, window: 'user' as const, order: 10 },
+  { id: 'notifications', visible: true, window: 'user' as const, order: 11 },
+  { id: 'event-logs', visible: true, window: 'user' as const, order: 12 },
+  { id: 'mcp', visible: true, window: 'user' as const, order: 13 },
 
   // User Window Tabs (In dropdown, initially hidden)
 ];

@@ -2,7 +2,7 @@ import { atom, map, type MapStore, type ReadableAtom, type WritableAtom } from '
 import type { EditorDocument, ScrollPosition } from '~/components/editor/codemirror/CodeMirrorEditor';
 import { ActionRunner } from '~/lib/runtime/action-runner';
 import type { ActionCallbackData, ArtifactCallbackData } from '~/lib/runtime/message-parser';
-import { webcontainer } from '~/lib/webcontainer';
+import { webcontainer, ensureWebContainerBoot } from '~/lib/webcontainer';
 import type { ITerminal } from '~/types/terminal';
 import { unreachable } from '~/utils/unreachable';
 import { EditorStore } from './editor';
@@ -40,6 +40,7 @@ export class WorkbenchStore {
   #filesStore = new FilesStore(webcontainer);
   #editorStore = new EditorStore(this.#filesStore);
   #terminalStore = new TerminalStore(webcontainer);
+  #runtimeReady = false;
 
   #reloadedMessages = new Set<string>();
 
@@ -77,6 +78,23 @@ export class WorkbenchStore {
         }
       }
     }
+
+    this.showWorkbench.subscribe((visible) => {
+      if (visible) {
+        void this.ensureRuntimeReady();
+      }
+    });
+  }
+
+  /** Boots WebContainer and file/preview watchers — deferred from initial page load. */
+  ensureRuntimeReady() {
+    if (this.#runtimeReady) {
+      return Promise.all([this.#filesStore.ensureReady(), this.#previewsStore.ensureReady()]);
+    }
+
+    this.#runtimeReady = true;
+
+    return Promise.all([ensureWebContainerBoot(), this.#filesStore.ensureReady(), this.#previewsStore.ensureReady()]);
   }
 
   addToExecutionQueue(callback: () => Promise<void>) {
@@ -466,6 +484,8 @@ export class WorkbenchStore {
   }
 
   addArtifact({ messageId, title, id, type }: ArtifactCallbackData) {
+    void this.ensureRuntimeReady();
+
     const artifact = this.#getArtifact(id);
 
     if (artifact) {
@@ -547,6 +567,8 @@ export class WorkbenchStore {
     }
   }
   async _runAction(data: ActionCallbackData, isStreaming: boolean = false) {
+    await this.ensureRuntimeReady();
+
     const { artifactId } = data;
 
     const artifact = this.#getArtifact(artifactId);

@@ -31,6 +31,8 @@ export const Terminal = memo(
       const resizeObserverRef = useRef<ResizeObserver>();
 
       useEffect(() => {
+        void import('@xterm/xterm/css/xterm.css');
+
         const element = terminalElementRef.current!;
 
         const fitAddon = new FitAddon();

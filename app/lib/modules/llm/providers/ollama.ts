@@ -27,6 +27,8 @@ export interface OllamaApiResponse {
   models: OllamaModel[];
 }
 
+import { getProfileNumCtx } from '~/lib/local-ai/profile';
+
 export default class OllamaProvider extends BaseProvider {
   name = 'Ollama';
   getApiKeyLink = 'https://ollama.com/download';
@@ -42,7 +44,11 @@ export default class OllamaProvider extends BaseProvider {
   getDefaultNumCtx(serverEnv?: Env): number {
     const envRecord = this.convertEnvToRecord(serverEnv);
 
-    return envRecord.DEFAULT_NUM_CTX ? parseInt(envRecord.DEFAULT_NUM_CTX, 10) : 32768;
+    if (envRecord.DEFAULT_NUM_CTX) {
+      return parseInt(envRecord.DEFAULT_NUM_CTX, 10);
+    }
+
+    return getProfileNumCtx('lite');
   }
 
   private _resolveBaseUrl(

@@ -150,7 +150,9 @@ export class StreamingMessageParser {
 
             if ('type' in currentAction && currentAction.type === 'file') {
               // Remove markdown code block syntax if present and file is not markdown
-              if (!currentAction.filePath.endsWith('.md')) {
+              const fp = (currentAction as any).filePath;
+
+              if (!fp || typeof fp !== 'string' || !fp.endsWith('.md')) {
                 content = cleanoutMarkdownSyntax(content);
                 content = cleanEscapedTags(content);
               }
@@ -182,7 +184,9 @@ export class StreamingMessageParser {
             if ('type' in currentAction && currentAction.type === 'file') {
               let content = input.slice(i);
 
-              if (!currentAction.filePath.endsWith('.md')) {
+              const fp = (currentAction as any).filePath;
+
+              if (!fp || typeof fp !== 'string' || !fp.endsWith('.md')) {
                 content = cleanoutMarkdownSyntax(content);
                 content = cleanEscapedTags(content);
               }
@@ -194,7 +198,7 @@ export class StreamingMessageParser {
                 action: {
                   ...(currentAction as FileAction),
                   content,
-                  filePath: currentAction.filePath,
+                  filePath: fp || 'generated.txt',
                 },
               });
             }
@@ -366,10 +370,30 @@ export class StreamingMessageParser {
         (actionAttributes as SupabaseAction).filePath = filePath;
       }
     } else if (actionType === 'file') {
-      const filePath = this.#extractAttribute(actionTag, 'filePath') as string;
+      let filePath = this.#extractAttribute(actionTag, 'filePath');
 
       if (!filePath) {
-        logger.debug('File path not specified');
+        /*
+         * Weak local models (OmniRoute + small Ollama etc.) often emit <boltAction type="file">
+         * without a filePath attribute, or with malformed quoting. Synthesize a safe fallback
+         * so parsing doesn't explode and we still surface *something* to the workbench.
+         * Try to make a slightly nicer name if we can guess a language from the tag or nearby text.
+         */
+        const langHint =
+          this.#extractAttribute(actionTag, 'lang') || this.#extractAttribute(actionTag, 'language') || 'txt';
+        const ext = langHint.includes('.')
+          ? ''
+          : langHint === 'json'
+            ? '.json'
+            : langHint === 'ts' || langHint === 'tsx'
+              ? '.ts'
+              : langHint === 'js' || langHint === 'jsx'
+                ? '.js'
+                : langHint === 'lua'
+                  ? '.lua'
+                  : '.txt';
+        filePath = `generated-${Date.now()}${ext}`;
+        logger.debug(`File path missing on <boltAction type="file"> — using fallback ${filePath}`);
       }
 
       (actionAttributes as FileAction).filePath = filePath;
@@ -381,8 +405,28 @@ export class StreamingMessageParser {
   }
 
   #extractAttribute(tag: string, attributeName: string): string | undefined {
-    const match = tag.match(new RegExp(`${attributeName}="([^"]*)"`, 'i'));
-    return match ? match[1] : undefined;
+    // Try double quotes (standard)
+    let match = tag.match(new RegExp(`${attributeName}="([^"]*)"`, 'i'));
+
+    if (match) {
+      return match[1];
+    }
+
+    // Try single quotes (common model mistake)
+    match = tag.match(new RegExp(`${attributeName}='([^']*)'`, 'i'));
+
+    if (match) {
+      return match[1];
+    }
+
+    // Try unquoted value (stop at space or >)
+    match = tag.match(new RegExp(`${attributeName}=([^\\s>]+)`, 'i'));
+
+    if (match) {
+      return match[1];
+    }
+
+    return undefined;
   }
 }
 

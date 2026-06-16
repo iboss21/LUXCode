@@ -2,6 +2,7 @@ import { getSystemPrompt } from './prompts/prompts';
 import optimized from './prompts/optimized';
 import { getFineTunedPrompt } from './prompts/new-prompt';
 import type { DesignScheme } from '~/types/design-scheme';
+import type { SelfHostedServicesState } from '~/lib/stores/selfHostedServices';
 
 export interface PromptOptions {
   cwd: string;
@@ -16,6 +17,7 @@ export interface PromptOptions {
       supabaseUrl?: string;
     };
   };
+  selfHosted?: SelfHostedServicesState;
 }
 
 export class PromptLibrary {
@@ -30,7 +32,7 @@ export class PromptLibrary {
     default: {
       label: 'Default Prompt',
       description: 'An fine tuned prompt for better results and less token usage',
-      get: (options) => getFineTunedPrompt(options.cwd, options.supabase, options.designScheme),
+      get: (options) => getFineTunedPrompt(options.cwd, options.supabase, options.designScheme, options.selfHosted),
     },
     original: {
       label: 'Old Default Prompt',

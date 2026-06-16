@@ -1,6 +1,6 @@
 import type { MCPConfig } from '~/lib/services/mcpService';
 
-export type McpPresetId = 'recommended' | 'coding' | 'demo';
+export type McpPresetId = 'recommended' | 'coding' | 'demo' | 'omniroute';
 
 export type McpPreset = {
   id: McpPresetId;
@@ -74,6 +74,25 @@ export const MCP_PRESETS: Record<McpPresetId, McpPreset> = {
         deepwiki: {
           type: 'streamable-http',
           url: 'https://mcp.deepwiki.com/mcp',
+        },
+      },
+    },
+  },
+  omniroute: {
+    id: 'omniroute',
+    label: 'OmniRoute gateway',
+    description: 'Full OmniRoute MCP — routing, providers, combos, and agent tools on localhost:20128.',
+    maxLLMSteps: 8,
+    config: {
+      mcpServers: {
+        omniroute: {
+          type: 'streamable-http',
+          url: 'http://127.0.0.1:20128/api/mcp/stream',
+        },
+        fetch: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', '@modelcontextprotocol/server-fetch'],
         },
       },
     },

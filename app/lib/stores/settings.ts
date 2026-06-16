@@ -23,8 +23,8 @@ export interface Shortcuts {
   toggleTerminal: Shortcut;
 }
 
-export const URL_CONFIGURABLE_PROVIDERS = ['Ollama', 'LMStudio', 'OpenAILike'];
-export const LOCAL_PROVIDERS = ['OpenAILike', 'LMStudio', 'Ollama'];
+export const URL_CONFIGURABLE_PROVIDERS = ['OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
+export const LOCAL_PROVIDERS = ['OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
 
 export type ProviderSetting = Record<string, IProviderConfig>;
 
@@ -197,7 +197,7 @@ if (isBrowser) {
 }
 
 // Create a function to update provider settings that handles both store and persistence
-export const updateProviderSettings = (provider: string, settings: ProviderSetting) => {
+export const updateProviderSettings = (provider: string, settings: Partial<IProviderConfig['settings']>) => {
   const currentSettings = providersStore.get();
 
   // Create new provider config with updated settings
@@ -215,6 +215,10 @@ export const updateProviderSettings = (provider: string, settings: ProviderSetti
   // Save to localStorage
   const allSettings = providersStore.get();
   localStorage.setItem(PROVIDER_SETTINGS_KEY, JSON.stringify(allSettings));
+
+  if (isBrowser) {
+    import('~/lib/local-ai/cookies').then(({ syncProviderSettingsCookie }) => syncProviderSettingsCookie());
+  }
 
   // If this is a local provider, update the auto-enabled tracking
   if (LOCAL_PROVIDERS.includes(provider) && updatedProvider.settings.enabled !== undefined) {

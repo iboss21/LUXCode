@@ -22,6 +22,7 @@ export interface StreamingOptions extends Omit<Parameters<typeof _streamText>[0]
       supabaseUrl?: string;
     };
   };
+  selfHostedServices?: import('~/lib/stores/selfHostedServices').SelfHostedServicesState;
 }
 
 const logger = createScopedLogger('stream-text');
@@ -160,6 +161,7 @@ export async function streamText(props: {
         hasSelectedProject: options?.supabaseConnection?.hasSelectedProject || false,
         credentials: options?.supabaseConnection?.credentials || undefined,
       },
+      selfHosted: options?.selfHostedServices,
     }) ?? getSystemPrompt();
 
   if (chatMode === 'build' && contextFiles && contextOptimization) {

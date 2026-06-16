@@ -5,6 +5,7 @@ import { useAnimate } from 'framer-motion';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useMessageParser, usePromptEnhancer, useShortcuts } from '~/lib/hooks';
+import { useLocalAiDiscovery } from '~/lib/hooks/useLocalAiDiscovery';
 import { description, useChatHistory } from '~/lib/persistence';
 import { chatStore } from '~/lib/stores/chat';
 import { workbenchStore } from '~/lib/stores/workbench';
@@ -23,6 +24,7 @@ import { logStore } from '~/lib/stores/logs';
 import { streamingState } from '~/lib/stores/streaming';
 import { filesToArtifacts } from '~/utils/fileUtils';
 import { supabaseConnection } from '~/lib/stores/supabase';
+import { getSelfHostedSupabaseCredentials, selfHostedServicesStore } from '~/lib/stores/selfHostedServices';
 import { defaultDesignScheme, type DesignScheme } from '~/types/design-scheme';
 import type { ElementInfo } from '~/components/workbench/Inspector';
 import type { TextUIPart, FileUIPart, Attachment } from '@ai-sdk/ui-utils';
@@ -96,6 +98,14 @@ export const ChatImpl = memo(
     const actionAlert = useStore(workbenchStore.alert);
     const deployAlert = useStore(workbenchStore.deployAlert);
     const supabaseConn = useStore(supabaseConnection);
+    const selfHostedState = useStore(selfHostedServicesStore);
+    const selfHostedSupabase = getSelfHostedSupabaseCredentials(selfHostedState);
+    const supabaseCredentials =
+      supabaseConn?.credentials?.supabaseUrl && supabaseConn?.credentials?.anonKey
+        ? supabaseConn.credentials
+        : selfHostedSupabase;
+    const supabaseConnected =
+      supabaseConn.isConnected || (!!selfHostedSupabase?.supabaseUrl && !!selfHostedSupabase?.anonKey);
     const selectedProject = supabaseConn.stats?.projects?.find(
       (project) => project.id === supabaseConn.selectedProjectId,
     );
@@ -141,13 +151,14 @@ export const ChatImpl = memo(
         chatMode,
         designScheme,
         supabase: {
-          isConnected: supabaseConn.isConnected,
-          hasSelectedProject: !!selectedProject,
+          isConnected: supabaseConnected,
+          hasSelectedProject: !!selectedProject || !!selfHostedSupabase,
           credentials: {
-            supabaseUrl: supabaseConn?.credentials?.supabaseUrl,
-            anonKey: supabaseConn?.credentials?.anonKey,
+            supabaseUrl: supabaseCredentials?.supabaseUrl,
+            anonKey: supabaseCredentials?.anonKey,
           },
         },
+        selfHosted: selfHostedState,
         maxLLMSteps: mcpSettings.maxLLMSteps,
       },
       sendExtraMessageFields: true,
@@ -541,9 +552,32 @@ export const ChatImpl = memo(
 
       chatStore.setKey('aborted', false);
 
+      // For build mode, help weaker local models actually produce artifacts instead of just describing plans.
+      let effectiveUserContent = finalMessageContent;
+      const isBuildMode = chatMode === 'build';
+      const looksLikeCodingRequest = /\b(code|build|create|scaffold|implement|make|start|generate|write)\b/i.test(
+        finalMessageContent,
+      );
+      const hasFewFiles = !files || Object.keys(files).length < 3;
+
+      if (isBuildMode && looksLikeCodingRequest) {
+        effectiveUserContent =
+          finalMessageContent +
+          `\n\n[SYSTEM INSTRUCTION FOR THIS REQUEST ONLY]: The current workspace is ${hasFewFiles ? 'empty or nearly empty' : 'small'}. ` +
+          `You are in BUILD mode. Do not describe steps or say "checking the workspace". ` +
+          `Immediately output ONE or more complete <boltArtifact> blocks containing real file contents using <boltAction type="file">. ` +
+          `If this is a RedM / rdr3 / lxr- resource, include a correct fxmanifest.lua first. ` +
+          `Start your response with the <boltArtifact> tag — no prose before it.`;
+
+        // Auto-switch to build mode if user is clearly asking for code
+        if (chatMode !== 'build') {
+          setChatMode?.('build');
+        }
+      }
+
       if (modifiedFiles !== undefined) {
         const userUpdateArtifact = filesToArtifacts(modifiedFiles, `${Date.now()}`);
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${finalMessageContent}`;
+        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${userUpdateArtifact}${effectiveUserContent}`;
 
         const attachmentOptions =
           uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
@@ -559,7 +593,7 @@ export const ChatImpl = memo(
 
         workbenchStore.resetAllFileModifications();
       } else {
-        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${finalMessageContent}`;
+        const messageText = `[Model: ${model}]\n\n[Provider: ${provider.name}]\n\n${effectiveUserContent}`;
 
         const attachmentOptions =
           uploadedFiles.length > 0 ? { experimental_attachments: await filesToAttachments(uploadedFiles) } : undefined;
@@ -572,6 +606,16 @@ export const ChatImpl = memo(
           },
           attachmentOptions,
         );
+      }
+
+      // Eagerly boot the runtime + show workbench when we expect real coding actions.
+      if (isBuildMode && looksLikeCodingRequest) {
+        try {
+          workbenchStore.showWorkbench.set(true);
+          workbenchStore.ensureRuntimeReady?.();
+        } catch {
+          /* best effort */
+        }
       }
 
       setInput('');
@@ -613,15 +657,48 @@ export const ChatImpl = memo(
       }
     }, []);
 
-    const handleModelChange = (newModel: string) => {
-      setModel(newModel);
-      Cookies.set('selectedModel', newModel, { expires: 30 });
-    };
+    const [discoveryVersion, setDiscoveryVersion] = useState(0);
 
-    const handleProviderChange = (newProvider: ProviderInfo) => {
-      setProvider(newProvider);
-      Cookies.set('selectedProvider', newProvider.name, { expires: 30 });
-    };
+    const handleModelChange = useCallback((newModel: string) => {
+      setModel((prev) => {
+        if (prev === newModel) {
+          return prev;
+        }
+
+        Cookies.set('selectedModel', newModel, { expires: 30 });
+
+        return newModel;
+      });
+    }, []);
+
+    const handleProviderChange = useCallback((newProvider: ProviderInfo) => {
+      setProvider((prev) => {
+        if (prev?.name === newProvider?.name) {
+          return prev;
+        }
+
+        Cookies.set('selectedProvider', newProvider.name, { expires: 30 });
+
+        return newProvider;
+      });
+    }, []);
+
+    const handleDiscoveryModels = useCallback(() => {
+      setDiscoveryVersion((v) => v + 1);
+    }, []);
+
+    /*
+     * Note: initial provider/model selection (including auto OmniRoute + "auto")
+     * is handled by useLocalAiDiscovery below. It has fast local probes + hard fallbacks
+     * and the handlers above are now guarded against no-op sets to prevent render loops.
+     */
+
+    useLocalAiDiscovery({
+      setProvider: handleProviderChange,
+      setModel: handleModelChange,
+      autoSelect: true,
+      onModels: handleDiscoveryModels,
+    });
 
     const handleWebSearchResult = useCallback(
       (result: string) => {
@@ -656,6 +733,7 @@ export const ChatImpl = memo(
         provider={provider}
         setProvider={handleProviderChange}
         providerList={activeProviders}
+        discoveryVersion={discoveryVersion}
         handleInputChange={(e) => {
           onTextareaChange(e);
           debouncedCachePrompt(e);

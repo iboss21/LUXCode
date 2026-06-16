@@ -16,6 +16,7 @@ export type TabType =
   | 'netlify'
   | 'vercel'
   | 'supabase'
+  | 'self-hosted'
   | 'event-logs'
   | 'mcp'
   | 'env-vars';
@@ -80,6 +81,7 @@ export const TAB_LABELS: Record<TabType, string> = {
   netlify: 'Netlify',
   vercel: 'Vercel',
   supabase: 'Supabase',
+  'self-hosted': 'Self-Hosted / Coolify',
   'event-logs': 'Event Logs',
   mcp: 'MCP Servers',
   'env-vars': 'Environment Variables',

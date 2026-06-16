@@ -20,6 +20,7 @@ const PREVIEW_CHANNEL = 'preview-updates';
 export class PreviewsStore {
   #availablePreviews = new Map<number, PreviewInfo>();
   #webcontainer: Promise<WebContainer>;
+  #initPromise: Promise<void> | null = null;
   #broadcastChannel?: BroadcastChannel;
   #lastUpdate = new Map<string, number>();
   #watchedFiles = new Set<string>();
@@ -71,8 +72,14 @@ export class PreviewsStore {
         this._broadcastStorageSync();
       };
     }
+  }
 
-    this.#init();
+  ensureReady() {
+    if (!this.#initPromise) {
+      this.#initPromise = this.#init();
+    }
+
+    return this.#initPromise;
   }
 
   #maybeCreateChannel(name: string): BroadcastChannel | undefined {

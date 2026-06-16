@@ -102,6 +102,17 @@ Click the **MCP** icon in the chat bar → **Enable** on **Recommended (free)** 
 
 Adds web fetch, documentation search, and memory so the AI can call tools during chat (similar to Cursor agent mode). Details in [Windows local guide](./docs/windows-local-free-ai.md#mcp-tools-extra-powers--like-cursor-tools).
 
+## Self-hosted / Coolify (your own stack — no SaaS bills)
+
+Use **your** Supabase, Appwrite, n8n, PocketBase, MinIO, Postgres, etc. running on **Coolify** or any VPS — not only official paid cloud tabs.
+
+1. **Settings → Self-Hosted / Coolify**
+2. Add a preset (e.g. **Supabase self-hosted**) with your Coolify URL and API keys
+3. Enable the service — luxCoder injects those env vars into AI prompts and `.env` generation
+4. In chat, the **Self-host** badge shows active services
+
+Official Supabase/Appwrite cloud tabs are **optional** when you self-host everything.
+
 ---
 
 ## Configuration

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { lazy, Suspense, useState, useEffect, useMemo, type ComponentType, type LazyExoticComponent } from 'react';
 import { useStore } from '@nanostores/react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { classNames } from '~/utils/classNames';
@@ -12,24 +12,44 @@ import type { TabType, Profile } from './types';
 import { TAB_LABELS, DEFAULT_TAB_CONFIG, TAB_DESCRIPTIONS } from './constants';
 import { DialogTitle } from '~/components/ui/Dialog';
 import { AvatarDropdown } from './AvatarDropdown';
-import BackgroundRays from '~/components/ui/BackgroundRays';
 
-// Import all tab components
-import ProfileTab from '~/components/@settings/tabs/profile/ProfileTab';
-import SettingsTab from '~/components/@settings/tabs/settings/SettingsTab';
-import NotificationsTab from '~/components/@settings/tabs/notifications/NotificationsTab';
-import FeaturesTab from '~/components/@settings/tabs/features/FeaturesTab';
-import { DataTab } from '~/components/@settings/tabs/data/DataTab';
-import { EventLogsTab } from '~/components/@settings/tabs/event-logs/EventLogsTab';
-import GitHubTab from '~/components/@settings/tabs/github/GitHubTab';
-import GitLabTab from '~/components/@settings/tabs/gitlab/GitLabTab';
-import SupabaseTab from '~/components/@settings/tabs/supabase/SupabaseTab';
-import VercelTab from '~/components/@settings/tabs/vercel/VercelTab';
-import NetlifyTab from '~/components/@settings/tabs/netlify/NetlifyTab';
-import CloudProvidersTab from '~/components/@settings/tabs/providers/cloud/CloudProvidersTab';
-import LocalProvidersTab from '~/components/@settings/tabs/providers/local/LocalProvidersTab';
-import McpTab from '~/components/@settings/tabs/mcp/McpTab';
-import EnvVarsTab from '~/components/@settings/tabs/env/EnvVarsTab';
+const ProfileTab = lazy(() => import('~/components/@settings/tabs/profile/ProfileTab'));
+const SettingsTab = lazy(() => import('~/components/@settings/tabs/settings/SettingsTab'));
+const NotificationsTab = lazy(() => import('~/components/@settings/tabs/notifications/NotificationsTab'));
+const FeaturesTab = lazy(() => import('~/components/@settings/tabs/features/FeaturesTab'));
+const DataTab = lazy(() => import('~/components/@settings/tabs/data/DataTab').then((m) => ({ default: m.DataTab })));
+const EventLogsTab = lazy(() =>
+  import('~/components/@settings/tabs/event-logs/EventLogsTab').then((m) => ({ default: m.EventLogsTab })),
+);
+const GitHubTab = lazy(() => import('~/components/@settings/tabs/github/GitHubTab'));
+const GitLabTab = lazy(() => import('~/components/@settings/tabs/gitlab/GitLabTab'));
+const SupabaseTab = lazy(() => import('~/components/@settings/tabs/supabase/SupabaseTab'));
+const VercelTab = lazy(() => import('~/components/@settings/tabs/vercel/VercelTab'));
+const NetlifyTab = lazy(() => import('~/components/@settings/tabs/netlify/NetlifyTab'));
+const CloudProvidersTab = lazy(() => import('~/components/@settings/tabs/providers/cloud/CloudProvidersTab'));
+const LocalProvidersTab = lazy(() => import('~/components/@settings/tabs/providers/local/LocalProvidersTab'));
+const McpTab = lazy(() => import('~/components/@settings/tabs/mcp/McpTab'));
+const SelfHostedTab = lazy(() => import('~/components/@settings/tabs/self-hosted/SelfHostedTab'));
+const EnvVarsTab = lazy(() => import('~/components/@settings/tabs/env/EnvVarsTab'));
+
+const TAB_COMPONENTS: Partial<Record<TabType, LazyExoticComponent<ComponentType>>> = {
+  profile: ProfileTab,
+  settings: SettingsTab,
+  notifications: NotificationsTab,
+  features: FeaturesTab,
+  data: DataTab,
+  'env-vars': EnvVarsTab,
+  'cloud-providers': CloudProvidersTab,
+  'local-providers': LocalProvidersTab,
+  github: GitHubTab,
+  gitlab: GitLabTab,
+  supabase: SupabaseTab,
+  'self-hosted': SelfHostedTab,
+  vercel: VercelTab,
+  netlify: NetlifyTab,
+  'event-logs': EventLogsTab,
+  mcp: McpTab,
+};
 
 interface ControlPanelProps {
   open: boolean;
@@ -128,41 +148,23 @@ export const ControlPanel = ({ open, onClose, initialTab = null }: ControlPanelP
   };
 
   const getTabComponent = (tabId: TabType) => {
-    switch (tabId) {
-      case 'profile':
-        return <ProfileTab />;
-      case 'settings':
-        return <SettingsTab />;
-      case 'notifications':
-        return <NotificationsTab />;
-      case 'features':
-        return <FeaturesTab />;
-      case 'data':
-        return <DataTab />;
-      case 'env-vars':
-        return <EnvVarsTab />;
-      case 'cloud-providers':
-        return <CloudProvidersTab />;
-      case 'local-providers':
-        return <LocalProvidersTab />;
-      case 'github':
-        return <GitHubTab />;
-      case 'gitlab':
-        return <GitLabTab />;
-      case 'supabase':
-        return <SupabaseTab />;
-      case 'vercel':
-        return <VercelTab />;
-      case 'netlify':
-        return <NetlifyTab />;
-      case 'event-logs':
-        return <EventLogsTab />;
-      case 'mcp':
-        return <McpTab />;
+    const TabComponent = TAB_COMPONENTS[tabId];
 
-      default:
-        return null;
+    if (!TabComponent) {
+      return null;
     }
+
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16 text-bolt-elements-textSecondary text-sm">
+            Loading…
+          </div>
+        }
+      >
+        <TabComponent />
+      </Suspense>
+    );
   };
 
   const getTabUpdateStatus = (tabId: TabType): boolean => {
@@ -233,7 +235,7 @@ export const ControlPanel = ({ open, onClose, initialTab = null }: ControlPanelP
     <RadixDialog.Root open={open}>
       <RadixDialog.Portal>
         <div className="fixed inset-0 flex items-center justify-center z-[100] modern-scrollbar">
-          <RadixDialog.Overlay className="absolute inset-0 bg-black/70 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-200" />
+          <RadixDialog.Overlay className="absolute inset-0 bg-black/70 dark:bg-black/80 transition-opacity duration-200" />
 
           <RadixDialog.Content
             aria-describedby={undefined}
@@ -253,9 +255,7 @@ export const ControlPanel = ({ open, onClose, initialTab = null }: ControlPanelP
                 open ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4',
               )}
             >
-              <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                <BackgroundRays />
-              </div>
+              <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none bg-gradient-to-br from-[#c9a96e]/5 via-transparent to-transparent" />
               <div className="relative z-10 flex flex-col h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">

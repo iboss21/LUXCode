@@ -48,7 +48,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
     },
   });
 
-  const { messages, files, promptId, contextOptimization, supabase, chatMode, designScheme, maxLLMSteps } =
+  const { messages, files, promptId, contextOptimization, supabase, selfHosted, chatMode, designScheme, maxLLMSteps } =
     await request.json<{
       messages: Messages;
       files: any;
@@ -64,6 +64,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
           supabaseUrl?: string;
         };
       };
+      selfHosted?: import('~/lib/stores/selfHostedServices').SelfHostedServicesState;
       maxLLMSteps: number;
     }>();
 
@@ -209,6 +210,7 @@ async function chatAction({ context, request }: ActionFunctionArgs) {
 
         const options: StreamingOptions = {
           supabaseConnection: supabase,
+          selfHostedServices: selfHosted,
           toolChoice: 'auto',
           tools: mcpService.toolsWithoutExecute,
           maxSteps: maxLLMSteps,

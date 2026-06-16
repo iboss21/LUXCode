@@ -1,0 +1,155 @@
+================================================================================
+FIX FOR: PowerShell parser error in scripts\windows-local.ps1
+"Unexpected token '}' in expression or statement" at the } else { around line 184
+================================================================================
+
+CAUSE
+The Ensure-OmniRoute / Ensure-OmniRouteEnv section was edited many times in rapid
+succession while adding the full "automatically install + start + configure OmniRoute"
+logic. One of the intermediate saves left unbalanced braces (very common in long
+PowerShell functions with nested if/try/while/else).
+
+The parser fails when it reaches the first "clean" } else { after the broken block.
+
+================================================================================
+HOW TO FIX (do this on your local machine)
+================================================================================
+
+1. Close any running PowerShell / starter windows.
+
+2. Open the file in Notepad++ / VSCode / your editor:
+   C:\Users\iBoss\Documents\GitHub\LUXCode\scripts\windows-local.ps1
+
+3. Find this line near the top of the functions:
+   function Ensure-OmniRoute {
+
+4. Select from that line all the way down to (and including) the end of the
+   Ensure-OmniRouteEnv function (the closing } of Ensure-OmniRouteEnv).
+
+5. DELETE the selected text.
+
+6. Paste the clean block below in its place.
+
+7. Save the file.
+
+8. Re-run starter.bat (double-click).
+
+================================================================================
+CLEAN BLOCK TO PASTE (copy everything between the === lines)
+================================================================================
+
+function Ensure-OmniRoute {
+    Write-Step "OmniRoute (Cursor-style local AI gateway for luxCoder)"
+
+    # 1. Auto-install the CLI if missing (no prompts — fully automatic)
+    if (-not (Test-OmniRouteCli)) {
+        Write-Host "OmniRoute not found. Installing globally with $pm ..." -ForegroundColor Yellow
+        & $pm install -g omniroute
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Global install of omniroute failed. You can try manually later: $pm install -g omniroute" -ForegroundColor Red
+        } else {
+            Write-Host "OmniRoute CLI installed successfully." -ForegroundColor Green
+        }
+    }
+
+    # 2. If already healthy, we're good. Open its dashboard for visibility.
+    if (Test-OmniRouteRunning) {
+        Write-Host "OmniRoute is already running and responding at http://127.0.0.1:20128" -ForegroundColor Green
+        try { Start-Process "http://127.0.0.1:20128/home" -ErrorAction SilentlyContinue } catch {}
+        return $true
+    }
+
+    # 3. Start a fresh instance in its own window so you can watch its logs
+    Write-Host "Starting OmniRoute in a new PowerShell window..." -ForegroundColor Cyan
+    try {
+        $null = Start-Process powershell -ArgumentList '-NoExit', '-Command', 'omniroute' -WindowStyle Normal -PassThru
+        Write-Host "OmniRoute launched. Waiting for it to become ready (this can take 5-20s the first time)..." -ForegroundColor DarkGray
+    } catch {
+        Write-Host "Could not launch OmniRoute process automatically. Start it yourself with: omniroute" -ForegroundColor Yellow
+        return $false
+    }
+
+    # 4. Poll until the gateway answers (with the luxcoder-local key or no key)
+    $deadline = (Get-Date).AddSeconds(50)
+    $ready = $false
+    $dots = 0
+    while ((Get-Date) -lt $deadline) {
+        if (Test-OmniRouteRunning) {
+            $ready = $true
+            break
+        }
+        $dots++
+        if ($dots % 4 -eq 0) { Write-Host "." -NoNewline -ForegroundColor DarkGray }
+        Start-Sleep -Milliseconds 900
+    }
+    if ($dots -gt 0) { Write-Host "" }
+
+    if ($ready) {
+        Write-Host "OmniRoute is now responding. Dashboard will open." -ForegroundColor Green
+        try { Start-Process "http://127.0.0.1:20128/home" -ErrorAction SilentlyContinue } catch {}
+        return $true
+    } else {
+        Write-Host "OmniRoute did not become ready in time. luxCoder will still launch and keep retrying from the UI." -ForegroundColor Yellow
+        Write-Host "Open http://127.0.0.1:20128/home yourself and ensure you have added at least one backend (Ollama recommended)." -ForegroundColor DarkGray
+        return $false
+    }
+}
+
+function Ensure-OmniRouteEnv {
+    # Make sure .env.local has the values so server-side routes and discovery also see OmniRoute
+    $envPath = ".env.local"
+    $lines = @()
+    if (Test-Path $envPath) {
+        $lines = Get-Content $envPath -ErrorAction SilentlyContinue
+    }
+
+    $hasBase = $lines | Where-Object { $_ -match '^OMNIROUTE_API_BASE_URL=' }
+    $hasKey  = $lines | Where-Object { $_ -match '^OMNIROUTE_API_KEY=' }
+
+    $changed = $false
+
+    if (-not $hasBase) {
+        $lines += "OMNIROUTE_API_BASE_URL=http://127.0.0.1:20128/v1"
+        $changed = $true
+    }
+    if (-not $hasKey) {
+        $lines += "OMNIROUTE_API_KEY=luxcoder-local"
+        $changed = $true
+    }
+
+    if ($changed) {
+        Set-Content -Path $envPath -Value ($lines -join "`r`n") -Encoding UTF8
+        Write-Host "Configured .env.local for OmniRoute (server-side auto-connect)." -ForegroundColor Green
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Call the auto OmniRoute logic early (after package manager is known)
+Write-Step "Local AI gateway — install / detect / start / configure"
+
+$omniReady = Ensure-OmniRoute
+Ensure-OmniRouteEnv
+
+if ($omniReady) {
+    Write-Host "✓ OmniRoute installed + running + configured for luxCoder." -ForegroundColor Green
+    Write-Host "   On launch: luxCoder will automatically use provider=OmniRoute, model=auto (smart routing)." -ForegroundColor DarkGray
+} else {
+    Write-Host "OmniRoute not yet reachable — luxCoder will still open and auto-retry / offer one-click in Settings." -ForegroundColor Yellow
+}
+# ─────────────────────────────────────────────────────────────────────────────
+
+================================================================================
+AFTER PASTING — quick syntax check (optional but recommended)
+================================================================================
+
+Open PowerShell in the LUXCode folder and run:
+
+powershell -NoProfile -Command "[System.Management.Automation.Language.Parser]::ParseFile('scripts\windows-local.ps1', [ref]$null, [ref]$errs); if ($errs.Count -gt 0) { $errs | ForEach-Object { $_.Message + ' @ line ' + $_.Extent.StartLineNumber } } else { 'Syntax OK - no errors' }"
+
+It should say "Syntax OK - no errors".
+
+Then double-click starter.bat again.
+
+================================================================================
+If you still get a parse error after this, paste the *exact* new error message here.
+================================================================================

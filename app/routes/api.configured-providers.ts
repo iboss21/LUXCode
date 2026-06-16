@@ -74,9 +74,9 @@ export const loader: LoaderFunction = async ({ context }) => {
             envApiToken &&
             typeof envApiToken === 'string' &&
             envApiToken.trim().length > 0 &&
-            !envApiToken.includes('your_') && // Filter out placeholder values
+            !envApiToken.includes('your_') &&
             !envApiToken.includes('_here') &&
-            envApiToken.length > 10; // API keys are typically longer than 10 chars
+            (providerName === 'OmniRoute' ? envApiToken.length >= 4 : envApiToken.length > 10);
 
           if (isValidApiToken) {
             isConfigured = true;

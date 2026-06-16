@@ -64,7 +64,7 @@ export default class OpenAIProvider extends BaseProvider {
     });
 
     if (!apiKey) {
-      throw `Missing Api Key configuration for ${this.name} provider`;
+      return [];
     }
 
     const response = await fetch(`https://api.openai.com/v1/models`, {

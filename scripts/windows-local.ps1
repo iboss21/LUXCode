@@ -1,6 +1,6 @@
-# LUXCode — Windows local browser launcher (free local AI: Ollama, LM Studio, Hugging Face)
+# luxCoder - Windows local browser launcher
 # Usage: powershell -ExecutionPolicy Bypass -File scripts/windows-local.ps1
-#    or: double-click start-luxcode.bat in the repo root
+#    or: double-click starter.bat / start-luxcode.bat
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
@@ -43,18 +43,114 @@ function Test-OllamaRunning {
     }
 }
 
-Write-Host @"
+function Test-OmniRouteCli {
+    return [bool](Get-Command "omniroute" -ErrorAction SilentlyContinue)
+}
 
-  _      _  _  ____
- | |    | || |/ ___|
- | |    | || | |
- | |___ | || | |___
- |_____| \__/ \____|
+function Test-OmniRouteRunning {
+    $keysToTry = @("luxcoder-local", "omniroute", "")
+    foreach ($k in $keysToTry) {
+        try {
+            $headers = @{}
+            if ($k) { $headers["Authorization"] = "Bearer $k" }
+            $r = Invoke-WebRequest -Uri "http://127.0.0.1:20128/v1/models" -UseBasicParsing -TimeoutSec 2 -Headers $headers
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch {
+            # try next key
+        }
+    }
+    return $false
+}
 
-  luxCoder — Local AI Vibe Coding Studio
-  The Lux Empire · https://aichatbot.thelux.app
+function Ensure-OmniRoute {
+    Write-Step "OmniRoute (Cursor-style local AI gateway for luxCoder)"
 
-"@ -ForegroundColor Magenta
+    # 1. Auto-install the CLI if missing (no prompts — fully automatic)
+    if (-not (Test-OmniRouteCli)) {
+        Write-Host "OmniRoute not found. Installing globally with $pm ..." -ForegroundColor Yellow
+        & $pm install -g omniroute
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Global install of omniroute failed. You can try manually later: $pm install -g omniroute" -ForegroundColor Red
+        } else {
+            Write-Host "OmniRoute CLI installed successfully." -ForegroundColor Green
+        }
+    }
+
+    # 2. If already healthy, we're good. Open its dashboard for visibility.
+    if (Test-OmniRouteRunning) {
+        Write-Host "OmniRoute is already running and responding at http://127.0.0.1:20128" -ForegroundColor Green
+        try { Start-Process "http://127.0.0.1:20128/home" -ErrorAction SilentlyContinue } catch {}
+        return $true
+    }
+
+    # 3. Start a fresh instance in its own window so you can watch its logs
+    Write-Host "Starting OmniRoute in a new PowerShell window..." -ForegroundColor Cyan
+    try {
+        $null = Start-Process powershell -ArgumentList '-NoExit', '-Command', 'omniroute' -WindowStyle Normal -PassThru
+        Write-Host "OmniRoute launched. Waiting for it to become ready (this can take 5-20s the first time)..." -ForegroundColor DarkGray
+    } catch {
+        Write-Host "Could not launch OmniRoute process automatically. Start it yourself with: omniroute" -ForegroundColor Yellow
+        return $false
+    }
+
+    # 4. Poll until the gateway answers (with the luxcoder-local key or no key)
+    $deadline = (Get-Date).AddSeconds(50)
+    $ready = $false
+    $dots = 0
+    while ((Get-Date) -lt $deadline) {
+        if (Test-OmniRouteRunning) {
+            $ready = $true
+            break
+        }
+        $dots++
+        if ($dots % 4 -eq 0) { Write-Host "." -NoNewline -ForegroundColor DarkGray }
+        Start-Sleep -Milliseconds 900
+    }
+    if ($dots -gt 0) { Write-Host "" }
+
+    if ($ready) {
+        Write-Host "OmniRoute is now responding. Dashboard will open." -ForegroundColor Green
+        try { Start-Process "http://127.0.0.1:20128/home" -ErrorAction SilentlyContinue } catch {}
+        return $true
+    } else {
+        Write-Host "OmniRoute did not become ready in time. luxCoder will still launch and keep retrying from the UI." -ForegroundColor Yellow
+        Write-Host "Open http://127.0.0.1:20128/home yourself and ensure you have added at least one backend (Ollama recommended)." -ForegroundColor DarkGray
+        return $false
+    }
+}
+
+function Ensure-OmniRouteEnv {
+    # Make sure .env.local has the values so server-side routes and discovery also see OmniRoute
+    $envPath = ".env.local"
+    $lines = @()
+    if (Test-Path $envPath) {
+        $lines = Get-Content $envPath -ErrorAction SilentlyContinue
+    }
+
+    $hasBase = $lines | Where-Object { $_ -match '^OMNIROUTE_API_BASE_URL=' }
+    $hasKey  = $lines | Where-Object { $_ -match '^OMNIROUTE_API_KEY=' }
+
+    $changed = $false
+
+    if (-not $hasBase) {
+        $lines += "OMNIROUTE_API_BASE_URL=http://127.0.0.1:20128/v1"
+        $changed = $true
+    }
+    if (-not $hasKey) {
+        $lines += "OMNIROUTE_API_KEY=luxcoder-local"
+        $changed = $true
+    }
+
+    if ($changed) {
+        Set-Content -Path $envPath -Value ($lines -join "`r`n") -Encoding UTF8
+        Write-Host "Configured .env.local for OmniRoute (server-side auto-connect)." -ForegroundColor Green
+    }
+}
+
+Write-Host ""
+Write-Host "  luxCoder - Local AI Vibe Coding Studio" -ForegroundColor Magenta
+Write-Host "  The Lux Empire - https://aichatbot.thelux.app" -ForegroundColor Magenta
+Write-Host ""
 
 Write-Step "Checking Node.js (18+)"
 if (-not (Test-Command "node")) {
@@ -76,6 +172,20 @@ if (Test-Command "pnpm") {
     exit 1
 }
 
+# ─────────────────────────────────────────────────────────────────────────────
+# FULLY AUTOMATIC OmniRoute setup (install → detect → start → configure)
+# Runs early so the user sees progress before the (long) npm/pnpm install.
+Write-Step "Local AI gateway — install / detect / start / configure"
+
+# These two calls do the full auto-install/start/configure.
+# The functions themselves print clear success/failure messages.
+$null = Ensure-OmniRoute
+Ensure-OmniRouteEnv
+
+# (The web app will still auto-select OmniRoute + "auto" model on first load
+#  even if the launcher could not fully confirm OmniRoute was ready.)
+# ─────────────────────────────────────────────────────────────────────────────
+
 Write-Step "Environment file"
 Ensure-EnvLocal
 
@@ -87,8 +197,6 @@ if (-not (Test-Path "node_modules")) {
         & npm install
     }
 }
-
-Write-Step "Local AI status"
 if (Test-OllamaRunning) {
     Write-Host "Ollama is running at http://127.0.0.1:11434" -ForegroundColor Green
     Write-Host "In the app: Settings > Providers > Local > enable Ollama, then pick a model." -ForegroundColor DarkGray
@@ -99,12 +207,17 @@ if (Test-OllamaRunning) {
     Write-Host "  Or use LM Studio / Hugging Face in Settings > Providers." -ForegroundColor DarkGray
 }
 
-Write-Step "Stopping stale dev servers on 5173–5175"
+Write-Step "Stopping stale dev servers on ports 5173-5175"
 & "$Root\scripts\stop-luxcode-dev.ps1"
 
-Write-Step "Starting LUXCode dev server"
+Write-Step "Starting luxCoder dev server"
 Write-Host "App URL: $Url" -ForegroundColor Green
-Write-Host "Press Ctrl+C in this window to stop." -ForegroundColor DarkGray
+Write-Host ""
+Write-Host "  ✓ OmniRoute install/see/connect/configure should be complete." -ForegroundColor Green
+Write-Host "  ✓ Browser will open to luxCoder with OmniRoute + 'auto' model pre-selected." -ForegroundColor Green
+Write-Host "  ✓ Just type a request like 'create a simple RedM resource' — it will code like Cursor." -ForegroundColor Green
+Write-Host ""
+Write-Host "Press Ctrl+C in this window to stop the dev server." -ForegroundColor DarkGray
 
 $browserJob = Start-Job -ScriptBlock {
     param($PreferredPort)
@@ -117,7 +230,9 @@ $browserJob = Start-Job -ScriptBlock {
                     $null = Invoke-WebRequest -Uri $tryUrl -UseBasicParsing -TimeoutSec 2
                     Start-Process $tryUrl
                     return
-                } catch { }
+                } catch {
+                    # server not ready yet
+                }
             }
         }
         Start-Sleep -Seconds 1

@@ -55,6 +55,18 @@ const ENV_VARIABLES: EnvVariable[] = [
 
   // Development
   {
+    key: 'OMNIROUTE_API_BASE_URL',
+    value: '',
+    description: 'OmniRoute gateway URL (http://127.0.0.1:20128/v1)',
+    category: 'development',
+  },
+  {
+    key: 'OMNIROUTE_API_KEY',
+    value: '',
+    description: 'OmniRoute API key from Dashboard → Endpoints',
+    category: 'development',
+  },
+  {
     key: 'OLLAMA_API_BASE_URL',
     value: '',
     description: 'Ollama base URL (e.g., http://127.0.0.1:11434)',

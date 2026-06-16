@@ -1,9 +1,10 @@
 import { json, type MetaFunction } from '@remix-run/cloudflare';
+import { lazy, Suspense } from 'react';
 import { ClientOnly } from 'remix-utils/client-only';
 import { BaseChat } from '~/components/chat/BaseChat';
-import { Chat } from '~/components/chat/Chat.client';
 import { Header } from '~/components/header/Header';
-import BackgroundRays from '~/components/ui/BackgroundRays';
+
+const Chat = lazy(() => import('~/components/chat/Chat.client').then((m) => ({ default: m.Chat })));
 
 export const meta: MetaFunction = () => {
   return [
@@ -22,9 +23,18 @@ export const loader = () => json({});
 export default function Index() {
   return (
     <div className="flex flex-col h-full w-full bg-bolt-elements-background-depth-1">
-      <BackgroundRays />
+      <div
+        className="pointer-events-none fixed inset-0 z-0 bg-gradient-to-b from-[#c9a96e]/10 via-transparent to-transparent"
+        aria-hidden
+      />
       <Header />
-      <ClientOnly fallback={<BaseChat />}>{() => <Chat />}</ClientOnly>
+      <ClientOnly fallback={<BaseChat />}>
+        {() => (
+          <Suspense fallback={<BaseChat />}>
+            <Chat />
+          </Suspense>
+        )}
+      </ClientOnly>
     </div>
   );
 }

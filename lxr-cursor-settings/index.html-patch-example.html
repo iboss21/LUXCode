@@ -1,0 +1,55 @@
+<!-- 
+  CURSOR SETTINGS — HTML PATCH EXAMPLE for lxr-medic (or any LXR resource)
+  Copy the relevant parts into your existing index.html
+-->
+
+<!-- 1. ADD THIS CSS LINK IN <head> (after your other styles) -->
+<link rel="stylesheet" href="lxr-settings.css" />
+
+
+<!-- 2. ADD THE SETTINGS SHELL SOMEWHERE INSIDE .adm-main 
+     (you can place it near the other tab shells, e.g. after #tab-boss) 
+-->
+<section id="tab-settings" class="lxr-medic-layout-wrap lxr-settings-shell hidden">
+  <!-- The JS (lxr-settings.js) will fully render the beautiful Cursor UI into this container
+       when window.LXRSettings.open(...) is called. You can leave it empty or put a loading hint. -->
+</section>
+
+
+<!-- 3. (Recommended) Add a launcher button in the header actions area.
+     Example — put this where you already build the header buttons (in app.js or inline).
+
+     In your showApp / updateChrome logic, after the existing actions:
+
+     if (state.isAdmin) {
+       const actions = document.querySelector('.actions');
+       if (actions && !document.getElementById('btnOpenSettings')) {
+         const btn = document.createElement('button');
+         btn.id = 'btnOpenSettings';
+         btn.className = 'cfg-btn cfg-btn--ghost';
+         btn.textContent = 'Settings';
+         btn.onclick = () => {
+           // Ask your Lua bridge for the latest config and open the panel
+           postNUI('settings:requestOpen', {});
+         };
+         actions.insertBefore(btn, actions.firstChild);
+       }
+     }
+-->
+
+
+<!-- 4. LOAD THE SCRIPT (at the bottom, after your other medic-*.js files) -->
+<script src="lxr-settings.js"></script>
+
+
+<!-- 
+  That's it for the NUI side.
+
+  On the Lua side you need:
+  - A NUI callback for 'settings:requestOpen' that does SendNUIMessage({ action = 'openSettings', config = currentConfig, locale = ... })
+  - Callbacks for 'settings:update', 'settings:save', 'settings:close'
+  - SetNuiFocus(true,true) when opening settings
+  - Server events to persist + broadcast changes to other admins
+
+  See the README.md in this folder for the full working Lua contract.
+-->

@@ -96,7 +96,13 @@ export function useSettings(): UseSettingsReturn {
       .filter(([_key, provider]) => provider.settings.enabled)
       .map(([_k, p]) => p);
 
-    setActiveProviders(active);
+    setActiveProviders((prev) => {
+      if (prev.length === active.length && prev.every((p, i) => p.name === active[i]?.name)) {
+        return prev;
+      }
+
+      return active;
+    });
   }, [providers]);
 
   const saveSettings = useCallback((newSettings: Partial<Settings>) => {

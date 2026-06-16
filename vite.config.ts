@@ -18,6 +18,39 @@ export default defineConfig((config) => {
     },
     build: {
       target: 'esnext',
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/@codemirror')) {
+              return 'codemirror';
+            }
+
+            if (id.includes('node_modules/@xterm')) {
+              return 'xterm';
+            }
+
+            if (id.includes('node_modules/shiki')) {
+              return 'shiki';
+            }
+
+            if (id.includes('node_modules/framer-motion')) {
+              return 'motion';
+            }
+
+            if (id.includes('node_modules/@webcontainer')) {
+              return 'webcontainer';
+            }
+
+            if (id.includes('node_modules/@ai-sdk') || id.includes('node_modules/ai/')) {
+              return 'ai-sdk';
+            }
+
+            if (id.includes('node_modules/react-markdown') || id.includes('node_modules/remark') || id.includes('node_modules/rehype')) {
+              return 'markdown';
+            }
+          },
+        },
+      },
     },
     ssr: {
       noExternal: ['remix-island', 'nanostores'],
@@ -66,6 +99,8 @@ export default defineConfig((config) => {
       'OPENAI_LIKE_API_BASE_URL',
       'OPENAI_LIKE_API_MODELS',
       'OLLAMA_API_BASE_URL',
+      'OMNIROUTE_API_BASE_URL',
+      'OMNIROUTE_API_KEY',
       'LMSTUDIO_API_BASE_URL',
       'TOGETHER_API_BASE_URL',
     ],

@@ -1,4 +1,4 @@
-# Stop LUXCode dev servers stuck on ports 5173–5175
+# Stop luxCoder dev servers stuck on ports 5173-5175
 foreach ($port in 5173, 5174, 5175) {
     Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
         ForEach-Object {

@@ -46,6 +46,7 @@ export type FileMap = Record<string, Dirent | undefined>;
 
 export class FilesStore {
   #webcontainer: Promise<WebContainer>;
+  #initPromise: Promise<void> | null = null;
 
   /**
    * Tracks the number of files without folders.
@@ -120,8 +121,15 @@ export class FilesStore {
 
       observer.observe(document, { subtree: true, childList: true });
     }
+  }
 
-    this.#init();
+  /** Deferred until first build/workbench use — keeps initial page load fast. */
+  ensureReady() {
+    if (!this.#initPromise) {
+      this.#initPromise = this.#init();
+    }
+
+    return this.#initPromise;
   }
 
   /**

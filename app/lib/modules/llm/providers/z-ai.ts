@@ -53,7 +53,7 @@ export default class ZaiProvider extends BaseProvider {
     });
 
     if (!apiKey) {
-      throw new Error(`Missing Api Key configuration for ${this.name} provider`);
+      return [];
     }
 
     const token = this._generateToken(apiKey);

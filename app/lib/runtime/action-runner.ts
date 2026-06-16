@@ -267,6 +267,11 @@ export class ActionRunner {
       action.content = validationResult.modifiedCommand;
     }
 
+    if (!validationResult.shouldModify && validationResult.warning) {
+      const blocked = this.#createBlockedCommandError(action.content, validationResult.warning);
+      throw new ActionCommandError(blocked.title, blocked.details);
+    }
+
     const resp = await shell.executeCommand(this.runnerId.get(), action.content, () => {
       logger.debug(`[${action.type}]:Aborting Action\n\n`, action);
       action.abort();
@@ -580,6 +585,49 @@ export class ActionRunner {
     warning?: string;
   }> {
     const trimmedCommand = command.trim();
+    const firstWord = trimmedCommand.split(/\s+/)[0]?.toLowerCase() ?? '';
+
+    // WebContainer has npm/node — not pnpm (common cause of exit 127)
+    if (firstWord === 'pnpm') {
+      return {
+        shouldModify: true,
+        modifiedCommand: trimmedCommand.replace(/^pnpm\b/, 'npm'),
+        warning: 'Replaced pnpm with npm (in-browser terminal only supports npm)',
+      };
+    }
+
+    // Host-only CLIs cannot run inside the browser sandbox
+    const hostOnlyCommands = new Set([
+      'ollama',
+      'docker',
+      'podman',
+      'winget',
+      'choco',
+      'brew',
+      'apt',
+      'apt-get',
+      'yum',
+      'dnf',
+      'pacman',
+      'powershell',
+      'pwsh',
+      'cmd',
+    ]);
+
+    if (hostOnlyCommands.has(firstWord)) {
+      return {
+        shouldModify: false,
+        warning: `'${firstWord}' runs on your PC, not in luxCoder's in-browser terminal. Use Settings for Ollama/models; use npm scripts here.`,
+      };
+    }
+
+    if (firstWord === 'git') {
+      return {
+        shouldModify: false,
+        warning:
+          'Git CLI is not available in WebContainer. luxCoder manages project files in the editor — import repos via the sidebar.',
+      };
+    }
 
     // Handle rm commands that might fail due to missing files
     if (trimmedCommand.startsWith('rm ') && !trimmedCommand.includes(' -f')) {
@@ -669,6 +717,19 @@ export class ActionRunner {
     return { shouldModify: false };
   }
 
+  #createBlockedCommandError(
+    command: string,
+    warning: string,
+  ): {
+    title: string;
+    details: string;
+  } {
+    return {
+      title: 'Command Not Available in Browser Terminal',
+      details: `${warning}\n\nAttempted: ${command.trim()}\n\nIn luxCoder, shell commands run inside WebContainer (browser Node.js). Use npm/npx for installs and dev servers. Run Ollama and Docker on Windows outside the app.`,
+    };
+  }
+
   #createEnhancedShellError(
     command: string,
     exitCode: number | undefined,
@@ -739,6 +800,58 @@ export class ActionRunner {
           details: errorPattern.getMessage(),
         };
       }
+    }
+
+    // Exit 127 = command not found (very common in WebContainer)
+    if (exitCode === 127) {
+      const hostOnly = new Set([
+        'ollama',
+        'docker',
+        'podman',
+        'git',
+        'pnpm',
+        'yarn',
+        'python',
+        'python3',
+        'pip',
+        'pip3',
+        'go',
+        'rustc',
+        'cargo',
+      ]);
+
+      if (hostOnly.has(firstWord.toLowerCase())) {
+        if (firstWord === 'pnpm' || firstWord === 'yarn') {
+          return {
+            title: 'Use npm Instead',
+            details: `'${firstWord}' is not available in the in-browser terminal.\n\nUse npm instead:\n  npm install\n  npm run dev\n\nCommand tried: ${trimmedCommand}`,
+          };
+        }
+
+        if (firstWord === 'ollama') {
+          return {
+            title: 'Ollama Runs on Your PC — Not in Terminal',
+            details: `Ollama cannot run inside luxCoder's browser terminal.\n\nInstall Ollama on Windows, then: Settings → Providers → Local → Ollama → Download a model.\n\nCommand tried: ${trimmedCommand}`,
+          };
+        }
+
+        if (firstWord === 'git') {
+          return {
+            title: 'Git CLI Not Available',
+            details: `WebContainer has no git command.\n\nUse the sidebar to import/clone repos, or let luxCoder create files in the editor.\n\nCommand tried: ${trimmedCommand}`,
+          };
+        }
+
+        return {
+          title: 'Command Not Found in Browser (127)',
+          details: `'${firstWord}' is not available in luxCoder's in-browser Linux shell.\n\nUse npm, npx, node, and curl. Run native tools (Ollama, Docker) on Windows separately.\n\nCommand tried: ${trimmedCommand}`,
+        };
+      }
+
+      return {
+        title: 'Command Not Found (127)',
+        details: `'${firstWord}' was not found. Often this means dependencies are not installed yet.\n\nTry:\n  1. npm install\n  2. npm run dev\n\nUse npm (not pnpm). Command tried: ${trimmedCommand}\n\nOutput: ${output || 'none'}`,
+      };
     }
 
     // Generic error with suggestions based on command type

@@ -1,5 +1,5 @@
 // Type definitions
-export type ProviderName = 'Ollama' | 'LMStudio' | 'OpenAILike';
+export type ProviderName = 'OmniRoute' | 'Ollama' | 'LMStudio' | 'OpenAILike';
 
 export interface OllamaModel {
   name: string;
@@ -32,12 +32,14 @@ export interface LMStudioModel {
 export const OLLAMA_API_URL = 'http://127.0.0.1:11434';
 
 export const PROVIDER_ICONS = {
+  OmniRoute: 'Path',
   Ollama: 'Server',
   LMStudio: 'Monitor',
   OpenAILike: 'Globe',
 } as const;
 
 export const PROVIDER_DESCRIPTIONS = {
+  OmniRoute: 'Local AI gateway — route Ollama, cloud APIs, and smart fallback (Cursor-style)',
   Ollama: 'Run open-source models locally on your machine',
   LMStudio: 'Local model inference with LM Studio',
   OpenAILike: 'Connect to OpenAI-compatible API endpoints',

@@ -8,6 +8,9 @@ interface Env {
   HuggingFace_API_BASE_URL: string;
   OPEN_ROUTER_API_KEY: string;
   OLLAMA_API_BASE_URL: string;
+  OMNIROUTE_API_BASE_URL: string;
+  OMNIROUTE_API_KEY: string;
+  OMNIROUTE_API_MODELS: string;
   OPENAI_LIKE_API_KEY: string;
   OPENAI_LIKE_API_BASE_URL: string;
   OPENAI_LIKE_API_MODELS: string;

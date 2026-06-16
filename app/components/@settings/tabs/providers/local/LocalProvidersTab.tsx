@@ -5,6 +5,7 @@ import { Button } from '~/components/ui/Button';
 import { useSettings } from '~/lib/hooks/useSettings';
 import { LOCAL_PROVIDERS } from '~/lib/stores/settings';
 import type { IProviderConfig } from '~/types/model';
+import type { ModelInfo } from '~/lib/modules/llm/types';
 import { logStore } from '~/lib/stores/logs';
 import { providerBaseUrlEnvKeys } from '~/utils/constants';
 import { useToast } from '~/components/ui/use-toast';
@@ -16,6 +17,8 @@ import StatusDashboard from './StatusDashboard';
 import ProviderCard from './ProviderCard';
 import ModelCard from './ModelCard';
 import { FreeLocalModelDownloads } from './FreeLocalModelDownloads';
+import { OmniRoutePanel } from './OmniRoutePanel';
+import { AvailableModelsHub } from './AvailableModelsHub';
 import { OLLAMA_API_URL } from './types';
 import type { OllamaModel, LMStudioModel } from './types';
 import { Cpu, Server, BookOpen, Activity, PackageOpen, Monitor, Loader2, RotateCw, ExternalLink } from 'lucide-react';
@@ -69,7 +72,7 @@ export default function LocalProvidersTab() {
       })
       .sort((a, b) => {
         // Custom sort: Ollama first, then LMStudio, then OpenAILike
-        const order = { Ollama: 0, LMStudio: 1, OpenAILike: 2 };
+        const order = { OmniRoute: -1, Ollama: 0, LMStudio: 1, OpenAILike: 2 };
         return (order[a.name as keyof typeof order] || 3) - (order[b.name as keyof typeof order] || 3);
       });
   }, [providers]);
@@ -138,15 +141,27 @@ export default function LocalProvidersTab() {
   const fetchLMStudioModels = async (baseUrl: string) => {
     try {
       setIsLoadingLMStudioModels(true);
+      updateProviderSettings('LMStudio', { enabled: true, baseUrl });
 
-      const response = await fetch(`${baseUrl}/v1/models`);
+      const { syncProviderSettingsCookie } = await import('~/lib/local-ai/cookies');
+      syncProviderSettingsCookie();
+
+      const response = await fetch(`/api/models/${encodeURIComponent('LMStudio')}`);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch LM Studio models');
+        throw new Error('Failed to fetch models');
       }
 
-      const data = (await response.json()) as { data: LMStudioModel[] };
-      setLMStudioModels(data.data || []);
+      const data = (await response.json()) as { modelList: ModelInfo[] };
+      const lmModels = data.modelList.filter((m) => m.provider === 'LMStudio');
+
+      setLMStudioModels(
+        lmModels.map((m) => ({
+          id: m.name,
+          object: 'model' as const,
+          owned_by: 'local',
+        })),
+      );
     } catch {
       console.error('Error fetching LM Studio models');
       setLMStudioModels([]);
@@ -345,6 +360,15 @@ export default function LocalProvidersTab() {
             </div>
           </div>
         </div>
+
+        <OmniRoutePanel />
+
+        <AvailableModelsHub
+          onSelectModel={(providerName, modelName) => {
+            updateProviderSettings(providerName, { enabled: true });
+            toast(`Selected ${modelName} (${providerName}) — use the chat model dropdown to confirm`);
+          }}
+        />
 
         {/* Provider Cards */}
         <div className="space-y-6">

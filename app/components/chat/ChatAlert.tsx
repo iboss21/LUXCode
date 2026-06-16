@@ -16,6 +16,7 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
   const message = isPreview
     ? 'We encountered an error while running the preview. Would you like luxCoder to analyze and help resolve this issue?'
     : 'We encountered an error while running terminal commands. Would you like luxCoder to analyze and help resolve this issue?';
+  const detailText = content || description;
 
   return (
     <AnimatePresence>
@@ -53,9 +54,9 @@ export default function ChatAlert({ alert, clearAlert, postMessage }: Props) {
               className={`mt-2 text-sm text-bolt-elements-textSecondary`}
             >
               <p>{message}</p>
-              {description && (
-                <div className="text-xs text-bolt-elements-textSecondary p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4">
-                  Error: {description}
+              {detailText && (
+                <div className="text-xs text-bolt-elements-textSecondary p-2 bg-bolt-elements-background-depth-3 rounded mt-4 mb-4 whitespace-pre-wrap max-h-40 overflow-y-auto">
+                  {detailText}
                 </div>
               )}
             </motion.div>
