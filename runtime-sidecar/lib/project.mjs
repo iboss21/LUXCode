@@ -175,6 +175,15 @@ export class Project {
       await removeContainer(this);
     }
 
+    // Pages that never created a file leave an empty workspace behind: remove it.
+    try {
+      if (this.root && (await fsp.readdir(this.root)).length === 0) {
+        await fsp.rmdir(this.root);
+      }
+    } catch {
+      // keep it
+    }
+
     this.emit({ ev: 'project.closed', reason });
     this.runtime.projects.delete(this.id);
   }

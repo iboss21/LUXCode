@@ -319,7 +319,14 @@ export class ActionRunner {
     }
 
     const webcontainer = await this.#webcontainer;
-    const relativePath = nodePath.relative(webcontainer.workdir, action.filePath);
+    /*
+     * Resolve against the workdir first: the browser path polyfill resolves a bare relative path
+     * against "/", which would turn "package.json" into "../../package.json".
+     */
+    const relativePath = nodePath.relative(
+      webcontainer.workdir,
+      nodePath.resolve(webcontainer.workdir, action.filePath),
+    );
 
     let folder = nodePath.dirname(relativePath);
 
