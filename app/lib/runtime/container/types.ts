@@ -25,11 +25,18 @@ export interface RuntimeDirEnt<T = string> {
 export interface RuntimeFileSystem {
   readFile(path: string, encoding?: null): Promise<Uint8Array>;
   readFile(path: string, encoding: string): Promise<string>;
-  writeFile(path: string, data: string | Uint8Array, options?: string | { encoding?: string | null } | null): Promise<void>;
+  writeFile(
+    path: string,
+    data: string | Uint8Array,
+    options?: string | { encoding?: string | null } | null,
+  ): Promise<void>;
   mkdir(path: string, options?: { recursive?: false }): Promise<void>;
   mkdir(path: string, options: { recursive: true }): Promise<string>;
   readdir(path: string, options: { withFileTypes: true; encoding?: string | null }): Promise<RuntimeDirEnt[]>;
-  readdir(path: string, options?: { withFileTypes?: false; encoding?: string | null } | string | null): Promise<string[]>;
+  readdir(
+    path: string,
+    options?: { withFileTypes?: false; encoding?: string | null } | string | null,
+  ): Promise<string[]>;
   rm(path: string, options?: { force?: boolean; recursive?: boolean }): Promise<void>;
   rename(oldPath: string, newPath: string): Promise<void>;
 }

@@ -1,7 +1,11 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import type { TextSearchOptions, TextSearchOnProgressCallback, WebContainer } from '@webcontainer/api';
+import type {
+  RuntimeTextSearchOptions as TextSearchOptions,
+  RuntimeTextSearchOnProgress as TextSearchOnProgressCallback,
+  RuntimeContainer as WebContainer,
+} from '~/lib/runtime/container';
 import { workbenchStore } from '~/lib/stores/workbench';
-import { webcontainer } from '~/lib/webcontainer';
+import { runtime as webcontainer } from '~/lib/runtime/container';
 import { WORK_DIR } from '~/utils/constants';
 import { debounce } from '~/utils/debounce';
 

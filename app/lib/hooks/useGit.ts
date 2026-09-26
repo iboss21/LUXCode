@@ -1,6 +1,6 @@
-import type { WebContainer } from '@webcontainer/api';
+import type { RuntimeContainer as WebContainer } from '~/lib/runtime/container';
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 'react';
-import { webcontainer as webcontainerPromise } from '~/lib/webcontainer';
+import { runtime as webcontainerPromise } from '~/lib/runtime/container';
 import git, { type GitAuth, type PromiseFsClient } from 'isomorphic-git';
 import http from 'isomorphic-git/http/web';
 import Cookies from 'js-cookie';

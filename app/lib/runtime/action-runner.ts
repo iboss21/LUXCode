@@ -1,4 +1,4 @@
-import type { WebContainer } from '@webcontainer/api';
+import type { RuntimeContainer as WebContainer } from '~/lib/runtime/container';
 import { path as nodePath } from '~/utils/path';
 import { atom, map, type MapStore } from 'nanostores';
 import type { ActionAlert, BoltAction, DeployAlert, FileHistory, SupabaseAction, SupabaseAlert } from '~/types/actions';
@@ -586,6 +586,16 @@ export class ActionRunner {
   }> {
     const trimmedCommand = command.trim();
     const firstWord = trimmedCommand.split(/\s+/)[0]?.toLowerCase() ?? '';
+    const isLocalRuntime = (await this.#webcontainer).kind === 'local';
+
+    /*
+     * The local runtime runs real processes on this machine: pnpm/yarn/git work when installed and
+     * the runtime's own allowlist decides what may run, so the WebContainer-only rewrites below
+     * do not apply.
+     */
+    if (isLocalRuntime) {
+      return this.#validateCommonShellCommand(trimmedCommand);
+    }
 
     // WebContainer has npm/node — not pnpm (common cause of exit 127)
     if (firstWord === 'pnpm') {
@@ -629,6 +639,14 @@ export class ActionRunner {
       };
     }
 
+    return this.#validateCommonShellCommand(trimmedCommand);
+  }
+
+  async #validateCommonShellCommand(trimmedCommand: string): Promise<{
+    shouldModify: boolean;
+    modifiedCommand?: string;
+    warning?: string;
+  }> {
     // Handle rm commands that might fail due to missing files
     if (trimmedCommand.startsWith('rm ') && !trimmedCommand.includes(' -f')) {
       const rmMatch = trimmedCommand.match(/^rm\s+(.+)$/);
@@ -726,7 +744,7 @@ export class ActionRunner {
   } {
     return {
       title: 'Command Not Available in Browser Terminal',
-      details: `${warning}\n\nAttempted: ${command.trim()}\n\nIn luxCoder, shell commands run inside WebContainer (browser Node.js). Use npm/npx for installs and dev servers. Run Ollama and Docker on Windows outside the app.`,
+      details: `${warning}\n\nAttempted: ${command.trim()}\n\nWith the WebContainer runtime, shell commands run inside the browser. Use npm/npx for installs and dev servers, or switch to the LuxCoder local runtime in Settings -> Runtime.`,
     };
   }
 
@@ -777,7 +795,7 @@ export class ActionRunner {
         pattern: /command not found/,
         title: 'Command Not Found',
         getMessage: () =>
-          `The command '${firstWord}' is not available in WebContainer.\n\nSuggestion: Check available commands or use a package manager to install it.`,
+          `The command '${firstWord}' is not available in this runtime.\n\nSuggestion: type 'help' in the terminal to see what is allowed, or use a package manager to install it.`,
       },
       {
         pattern: /Is a directory/,

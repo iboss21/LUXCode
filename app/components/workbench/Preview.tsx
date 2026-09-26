@@ -7,6 +7,7 @@ import { ScreenshotSelector } from './ScreenshotSelector';
 import { expoUrlAtom } from '~/lib/stores/qrCodeStore';
 import { ExpoQrModal } from '~/components/workbench/ExpoQrModal';
 import type { ElementInfo } from './Inspector';
+import { getPreviewId, getPreviewWindowUrl } from '~/lib/runtime/container';
 
 type ResizeSide = 'left' | 'right' | null;
 
@@ -377,12 +378,9 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
 
   const openInNewWindow = (size: WindowSize) => {
     if (activePreview?.baseUrl) {
-      const match = activePreview.baseUrl.match(/^https?:\/\/([^.]+)\.local-credentialless\.webcontainer-api\.io/);
+      const previewUrl = getPreviewWindowUrl(activePreview.baseUrl);
 
-      if (match) {
-        const previewId = match[1];
-        const previewUrl = `/webcontainer/preview/${previewId}`;
-
+      if (previewUrl) {
         // Adjust dimensions for landscape mode if applicable
         let width = size.width;
         let height = size.height;
@@ -544,7 +542,7 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
           }
         }
       } else {
-        console.warn('[Preview] Invalid WebContainer URL:', activePreview.baseUrl);
+        console.warn('[Preview] Unrecognised preview URL:', activePreview.baseUrl);
       }
     }
   };
@@ -786,17 +784,13 @@ export const Preview = memo(({ setSelectedElement }: PreviewProps) => {
                             return;
                           }
 
-                          const match = activePreview.baseUrl.match(
-                            /^https?:\/\/([^.]+)\.local-credentialless\.webcontainer-api\.io/,
-                          );
+                          const previewUrl = getPreviewWindowUrl(activePreview.baseUrl);
+                          const previewId = getPreviewId(activePreview.baseUrl);
 
-                          if (!match) {
-                            console.warn('[Preview] Invalid WebContainer URL:', activePreview.baseUrl);
+                          if (!previewUrl || !previewId) {
+                            console.warn('[Preview] Unrecognised preview URL:', activePreview.baseUrl);
                             return;
                           }
-
-                          const previewId = match[1];
-                          const previewUrl = `/webcontainer/preview/${previewId}`;
 
                           // Open in a new window with simple parameters
                           window.open(

@@ -1,5 +1,6 @@
-import type { WebContainer } from '@webcontainer/api';
+import type { RuntimeContainer as WebContainer } from '~/lib/runtime/container';
 import { atom } from 'nanostores';
+import { getPreviewId } from '~/lib/runtime/container';
 
 // Extend Window interface to include our custom property
 declare global {
@@ -217,8 +218,7 @@ export class PreviewsStore {
 
   // Helper to extract preview ID from URL
   getPreviewId(url: string): string | null {
-    const match = url.match(/^https?:\/\/([^.]+)\.local-credentialless\.webcontainer-api\.io/);
-    return match ? match[1] : null;
+    return getPreviewId(url);
   }
 
   // Broadcast state change to all tabs

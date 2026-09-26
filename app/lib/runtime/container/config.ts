@@ -70,7 +70,9 @@ export async function resolveRuntimeChoice(): Promise<{ kind: RuntimeKind; sessi
 /** Project id for the local workspace: the chat id from the URL, else a fresh id. */
 export function currentProjectId(): string {
   const match = globalThis.location?.pathname.match(/\/chat\/([^/?#]+)/);
-  const raw = match ? decodeURIComponent(match[1]) : `new-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const raw = match
+    ? decodeURIComponent(match[1])
+    : `new-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   const clean = raw
     .toLowerCase()

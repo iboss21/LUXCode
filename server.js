@@ -19,6 +19,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { runtimeMode, startRuntimeSidecar, stopRuntimeSidecar } from './runtime-sidecar/launch.mjs';
 
 // Install fetch, Request, Response globals for Node.js
 installGlobals();
@@ -139,11 +140,19 @@ async function startServer() {
       if (!IS_PROD) {
         broadcastDevReady(build);
       }
+
+      // LuxCoder local runtime (replaces WebContainer). Loopback only; see docs/LOCAL-RUNTIME.md
+      if (runtimeMode() === 'local') {
+        startRuntimeSidecar({ uiPort: Number(PORT) }).catch((error) =>
+          console.error('[luxcoder-runtime] failed to start:', error.message),
+        );
+      }
     });
 
     // Graceful shutdown
     const shutdown = (signal) => {
       console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+      stopRuntimeSidecar().catch(() => {});
       server.close(() => {
         console.log('✅ Server closed');
         process.exit(0);

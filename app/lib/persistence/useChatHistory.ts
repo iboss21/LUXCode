@@ -19,7 +19,7 @@ import {
 } from './db';
 import type { FileMap } from '~/lib/stores/files';
 import type { Snapshot } from './types';
-import { ensureWebContainerBoot } from '~/lib/webcontainer';
+import { ensureRuntimeBoot } from '~/lib/runtime/container';
 import { detectProjectCommands, createCommandActionsString } from '~/utils/projectCommands';
 import type { ContextAnnotation } from '~/types/context';
 
@@ -224,7 +224,7 @@ ${value.content}
   );
 
   const restoreSnapshot = useCallback(async (id: string, snapshot?: Snapshot) => {
-    const container = await ensureWebContainerBoot();
+    const container = await ensureRuntimeBoot();
 
     const validSnapshot = snapshot || { chatIndex: '', files: {} };
 

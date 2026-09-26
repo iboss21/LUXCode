@@ -5,6 +5,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { optimizeCssModules } from 'vite-plugin-optimize-css-modules';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import * as dotenv from 'dotenv';
+import { runtimeMode, startRuntimeSidecar, stopRuntimeSidecar } from './runtime-sidecar/launch.mjs';
 
 // Load environment variables from multiple files
 dotenv.config({ path: '.env.local' });
@@ -92,6 +93,7 @@ export default defineConfig((config) => {
       UnoCSS(),
       tsconfigPaths(),
       chrome129IssuePlugin(),
+      config.mode !== 'test' && luxcoderLocalRuntimePlugin(),
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
     ],
     envPrefix: [
@@ -129,6 +131,35 @@ export default defineConfig((config) => {
     },
   };
 });
+
+/**
+ * Starts the LuxCoder local runtime sidecar (runtime-sidecar/) next to the dev server and stops it
+ * with the dev server. Set LUXCODER_RUNTIME=webcontainer to skip it. See docs/LOCAL-RUNTIME.md.
+ */
+function luxcoderLocalRuntimePlugin() {
+  return {
+    name: 'luxcoder-local-runtime',
+    apply: 'serve' as const,
+    configureServer(server: ViteDevServer) {
+      if (runtimeMode() !== 'local' || !server.httpServer) {
+        return;
+      }
+
+      server.httpServer.once('listening', () => {
+        const address = server.httpServer?.address();
+        const uiPort = typeof address === 'object' && address ? address.port : Number(process.env.PORT) || 5173;
+
+        startRuntimeSidecar({ uiPort, log: (msg: string) => server.config.logger.info(msg) }).catch((error: Error) =>
+          server.config.logger.error(`[luxcoder-runtime] failed to start: ${error.message}`),
+        );
+      });
+
+      server.httpServer.once('close', () => {
+        void stopRuntimeSidecar();
+      });
+    },
+  };
+}
 
 function chrome129IssuePlugin() {
   return {

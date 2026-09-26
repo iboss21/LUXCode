@@ -5,6 +5,7 @@ import { classNames } from '~/utils/classNames';
 import { Switch } from '~/components/ui/Switch';
 import type { UserProfile } from '~/components/@settings/core/types';
 import { isMac } from '~/utils/os';
+import { RuntimeSettings } from './RuntimeSettings';
 
 // Helper to get modifier key symbols/text
 const getModifierSymbol = (modifier: string): string => {
@@ -140,6 +141,9 @@ export default function SettingsTab() {
           </div>
         </div>
       </motion.div>
+
+      {/* Runtime (local runtime vs WebContainer) */}
+      <RuntimeSettings />
 
       {/* Timezone */}
       <motion.div

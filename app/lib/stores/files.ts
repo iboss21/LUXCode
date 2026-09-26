@@ -1,4 +1,7 @@
-import type { PathWatcherEvent, WebContainer } from '@webcontainer/api';
+import type {
+  RuntimePathWatcherEvent as PathWatcherEvent,
+  RuntimeContainer as WebContainer,
+} from '~/lib/runtime/container';
 import { getEncoding } from 'istextorbinary';
 import { map, type MapStore } from 'nanostores';
 import { Buffer } from 'node:buffer';
