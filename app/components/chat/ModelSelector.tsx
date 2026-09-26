@@ -445,7 +445,6 @@ export const ModelSelector = ({
     }
 
     // Intentionally omit setProvider/setModel — unstable refs caused infinite update loops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerList.map((p) => p.name).join(','), provider?.name, modelList.length]);
 
   if (providerList.length === 0) {
