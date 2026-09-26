@@ -23,8 +23,8 @@ export interface Shortcuts {
   toggleTerminal: Shortcut;
 }
 
-export const URL_CONFIGURABLE_PROVIDERS = ['OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
-export const LOCAL_PROVIDERS = ['OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
+export const URL_CONFIGURABLE_PROVIDERS = ['Reges', 'OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
+export const LOCAL_PROVIDERS = ['Reges', 'OmniRoute', 'Ollama', 'LMStudio', 'OpenAILike'];
 
 export type ProviderSetting = Record<string, IProviderConfig>;
 

@@ -55,6 +55,24 @@ const ENV_VARIABLES: EnvVariable[] = [
 
   // Development
   {
+    key: 'REGES_API_BASE_URL',
+    value: '',
+    description: 'Reges harness gateway URL (http://127.0.0.1:3000/v1)',
+    category: 'development',
+  },
+  {
+    key: 'REGES_API_KEY',
+    value: '',
+    description: 'Reges key: any value on the Reges machine, an rg_ token from elsewhere',
+    category: 'development',
+  },
+  {
+    key: 'REGES_MODE',
+    value: '',
+    description: 'plain (default: luxCoder prompt only) or harness (Reges tools + reasoning)',
+    category: 'development',
+  },
+  {
     key: 'OMNIROUTE_API_BASE_URL',
     value: '',
     description: 'OmniRoute gateway URL (http://127.0.0.1:20128/v1)',

@@ -90,7 +90,7 @@ export class LLMManager {
       enabledProviders = enabledProviders.filter((p) => providerSettings[p].enabled);
     }
 
-    const LOCAL_PROVIDERS = new Set(['OmniRoute', 'Ollama', 'LMStudio']);
+    const LOCAL_PROVIDERS = new Set(['Reges', 'OmniRoute', 'Ollama', 'LMStudio']);
 
     /*
      * Only attempt dynamic models for:
@@ -183,7 +183,7 @@ export class LLMManager {
 
     const { apiKeys, providerSettings, serverEnv } = options;
 
-    const LOCAL_PROVIDERS = new Set(['OmniRoute', 'Ollama', 'LMStudio']);
+    const LOCAL_PROVIDERS = new Set(['Reges', 'OmniRoute', 'Ollama', 'LMStudio']);
 
     const cachedModels = provider.getModelsFromCache({
       apiKeys,
@@ -241,7 +241,7 @@ export class LLMManager {
   }
 
   getDefaultProvider(): BaseProvider {
-    const preferred = ['OmniRoute', 'Ollama', 'LMStudio'];
+    const preferred = ['Reges', 'OmniRoute', 'Ollama', 'LMStudio'];
 
     for (const name of preferred) {
       const provider = this._providers.get(name);

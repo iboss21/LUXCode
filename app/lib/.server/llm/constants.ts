@@ -20,6 +20,7 @@ export const PROVIDER_COMPLETION_LIMITS: Record<string, number> = {
   HuggingFace: 4096,
   Mistral: 8192,
   Ollama: 8192,
+  Reges: 16384,
   OmniRoute: 8192,
   OpenRouter: 8192,
   Perplexity: 8192,

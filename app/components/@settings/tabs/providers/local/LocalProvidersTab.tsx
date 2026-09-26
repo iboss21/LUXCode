@@ -72,7 +72,7 @@ export default function LocalProvidersTab() {
       })
       .sort((a, b) => {
         // Custom sort: Ollama first, then LMStudio, then OpenAILike
-        const order = { OmniRoute: -1, Ollama: 0, LMStudio: 1, OpenAILike: 2 };
+        const order = { Reges: -2, OmniRoute: -1, Ollama: 0, LMStudio: 1, OpenAILike: 2 };
         return (order[a.name as keyof typeof order] || 3) - (order[b.name as keyof typeof order] || 3);
       });
   }, [providers]);

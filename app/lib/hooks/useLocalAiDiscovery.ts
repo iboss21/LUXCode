@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Cookies from 'js-cookie';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { syncProviderSettingsCookie } from '~/lib/local-ai/cookies';
+import { REGES_DEFAULT_MODEL } from '~/lib/reges/config';
 import type { LocalAiDiscoveryResult } from '~/lib/local-ai/discovery';
 import { providersStore, updateProviderSettings } from '~/lib/stores/settings';
 import type { ProviderInfo } from '~/types/model';
@@ -115,9 +116,12 @@ export function useLocalAiDiscovery(options?: {
           }
         }
       } else if (!Cookies.get('selectedProvider') && !Cookies.get('selectedModel')) {
-        // Hard fallback: if OmniRoute is online right now, force it + model=auto on first run
-        const omniOnline = result.providers.some((p) => p.name === 'OmniRoute' && p.online);
-        const omniProvider = PROVIDER_LIST.find((p) => p.name === 'OmniRoute');
+        // Hard fallback: if Reges (else OmniRoute) is online right now, force it on first run
+        const regesOnline = result.providers.some((p) => p.name === 'Reges' && p.online);
+        const fallbackName = regesOnline ? 'Reges' : 'OmniRoute';
+        const fallbackModel = regesOnline ? REGES_DEFAULT_MODEL : 'auto';
+        const omniOnline = regesOnline || result.providers.some((p) => p.name === 'OmniRoute' && p.online);
+        const omniProvider = PROVIDER_LIST.find((p) => p.name === fallbackName);
         const setP = optionsRef.current?.setProvider;
         const setM = optionsRef.current?.setModel;
 
@@ -128,11 +132,11 @@ export function useLocalAiDiscovery(options?: {
           }
 
           if (!Cookies.get('selectedModel')) {
-            setM('auto');
+            setM(fallbackModel);
           }
 
-          Cookies.set('selectedProvider', 'OmniRoute', { expires: 365 });
-          Cookies.set('selectedModel', 'auto', { expires: 365 });
+          Cookies.set('selectedProvider', fallbackName, { expires: 365 });
+          Cookies.set('selectedModel', fallbackModel, { expires: 365 });
         }
       }
 

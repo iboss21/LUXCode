@@ -1,3 +1,4 @@
+import RegesProvider from './providers/reges';
 import OmniRouteProvider from './providers/omniroute';
 import AnthropicProvider from './providers/anthropic';
 import CerebrasProvider from './providers/cerebras';
@@ -23,6 +24,7 @@ import MoonshotProvider from './providers/moonshot';
 import ZaiProvider from './providers/z-ai';
 
 export {
+  RegesProvider,
   OmniRouteProvider,
   AnthropicProvider,
   CerebrasProvider,

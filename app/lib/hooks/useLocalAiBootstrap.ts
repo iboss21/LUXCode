@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { OMNIROUTE_AUTO_MODEL } from '~/lib/omniroute/config';
+import { REGES_DEFAULT_MODEL } from '~/lib/reges/config';
 import { getStoredLocalAiProfile, LOCAL_AI_PROFILES } from '~/lib/local-ai/profile';
 import { updateProviderSettings } from '~/lib/stores/settings';
 import { useMCPStore } from '~/lib/stores/mcp';
@@ -17,7 +18,7 @@ interface OmniRouteStatus {
 }
 
 /**
- * Cursor-style bootstrap: prefer OmniRoute gateway, then direct Ollama.
+ * Cursor-style bootstrap: prefer the Reges harness gateway, then OmniRoute, then direct Ollama.
  * Skips if user already picked a provider/model.
  */
 export function useLocalAiBootstrap(
@@ -47,6 +48,29 @@ export function useLocalAiBootstrap(
     void (async () => {
       const profile = getStoredLocalAiProfile();
       const profileConfig = LOCAL_AI_PROFILES[profile];
+
+      let reges: OmniRouteStatus & { defaultModel?: string } = { running: false };
+
+      try {
+        const res = await fetch('/api/reges-status');
+        reges = (await res.json()) as typeof reges;
+      } catch {
+        /* offline */
+      }
+
+      const regesProvider = PROVIDER_LIST.find((p) => p.name === 'Reges');
+
+      if (reges.running && regesProvider) {
+        const model = reges.defaultModel || REGES_DEFAULT_MODEL;
+        updateProviderSettings('Reges', { enabled: true });
+        setProvider(regesProvider as ProviderInfo);
+        setModel(model);
+        Cookies.set(PROVIDER_COOKIE, 'Reges', { expires: 365 });
+        Cookies.set(MODEL_COOKIE, model, { expires: 365 });
+        sessionStorage.setItem(BOOTSTRAP_KEY, '1');
+
+        return;
+      }
 
       let omniroute: OmniRouteStatus = { running: false };
 

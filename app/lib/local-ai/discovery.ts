@@ -1,6 +1,13 @@
 import { LLMManager } from '~/lib/modules/llm/manager';
 import type { ModelInfo } from '~/lib/modules/llm/types';
 import { OMNIROUTE_DEFAULT_BASE_URL, normalizeOmniRouteBaseUrl, resolveOmniRouteApiKey } from '~/lib/omniroute/config';
+import {
+  REGES_DEFAULT_BASE_URL,
+  REGES_DEFAULT_MODEL,
+  normalizeRegesBaseUrl,
+  regesModelLabel,
+  resolveRegesApiKey,
+} from '~/lib/reges/config';
 
 export type DiscoveredProvider = {
   name: string;
@@ -19,6 +26,14 @@ export type LocalAiDiscoveryResult = {
 };
 
 const PROBE_TARGETS = [
+  {
+    name: 'Reges',
+    envBaseUrlKey: 'REGES_API_BASE_URL',
+    defaultBaseUrl: REGES_DEFAULT_BASE_URL,
+    envApiKeyKey: 'REGES_API_KEY',
+    probePath: '/models',
+    auth: true,
+  },
   {
     name: 'OmniRoute',
     envBaseUrlKey: 'OMNIROUTE_API_BASE_URL',
@@ -87,6 +102,26 @@ async function probeLmStudio(baseUrl: string): Promise<ModelInfo[]> {
   }));
 }
 
+async function probeReges(baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
+  const response = await fetch(`${normalizeRegesBaseUrl(baseUrl)}/models`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+    signal: AbortSignal.timeout(4000),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const data = (await response.json()) as { data?: Array<{ id: string; context_length?: number }> };
+
+  return (data.data ?? []).map((m) => ({
+    name: m.id,
+    label: regesModelLabel(m.id),
+    provider: 'Reges',
+    maxTokenAllowed: Math.min(m.context_length || 128000, 200000),
+  }));
+}
+
 async function probeOmniRoute(baseUrl: string, apiKey: string): Promise<ModelInfo[]> {
   const normalized = normalizeOmniRouteBaseUrl(baseUrl);
   const response = await fetch(`${normalized}/models`, {
@@ -115,17 +150,22 @@ export async function discoverLocalAi(
   const providers: DiscoveredProvider[] = [];
 
   for (const target of PROBE_TARGETS) {
+    const rawBaseUrl = resolveBaseUrl(serverEnv, target.envBaseUrlKey, target.defaultBaseUrl);
     const baseUrl =
       target.name === 'OmniRoute'
-        ? normalizeOmniRouteBaseUrl(resolveBaseUrl(serverEnv, target.envBaseUrlKey, target.defaultBaseUrl))
-        : resolveBaseUrl(serverEnv, target.envBaseUrlKey, target.defaultBaseUrl);
+        ? normalizeOmniRouteBaseUrl(rawBaseUrl)
+        : target.name === 'Reges'
+          ? normalizeRegesBaseUrl(rawBaseUrl)
+          : rawBaseUrl;
 
     let online = false;
     let models: ModelInfo[] = [];
     let error: string | undefined;
 
     try {
-      if (target.name === 'Ollama') {
+      if (target.name === 'Reges') {
+        models = await probeReges(baseUrl, resolveRegesApiKey(resolveApiKey(serverEnv, target.envApiKeyKey)));
+      } else if (target.name === 'Ollama') {
         models = await probeOllama(baseUrl);
       } else if (target.name === 'LMStudio') {
         models = await probeLmStudio(baseUrl);
@@ -176,9 +216,13 @@ export async function discoverLocalAi(
 
   let recommended: LocalAiDiscoveryResult['recommended'] = null;
 
+  const reges = providers.find((p) => p.name === 'Reges' && p.online && p.models.length > 0);
   const omniroute = providers.find((p) => p.name === 'OmniRoute' && p.online);
 
-  if (omniroute && omniroute.models.length > 0) {
+  if (reges) {
+    const preferred = reges.models.find((m) => m.name === REGES_DEFAULT_MODEL) ?? reges.models[0];
+    recommended = { provider: 'Reges', model: preferred.name };
+  } else if (omniroute && omniroute.models.length > 0) {
     const auto = omniroute.models.find((m) => m.name === 'auto');
     recommended = { provider: 'OmniRoute', model: auto?.name ?? omniroute.models[0].name };
   } else {

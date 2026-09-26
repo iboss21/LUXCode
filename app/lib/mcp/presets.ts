@@ -1,6 +1,6 @@
 import type { MCPConfig } from '~/lib/services/mcpService';
 
-export type McpPresetId = 'recommended' | 'coding' | 'demo' | 'omniroute';
+export type McpPresetId = 'recommended' | 'coding' | 'demo' | 'omniroute' | 'reges';
 
 export type McpPreset = {
   id: McpPresetId;
@@ -74,6 +74,20 @@ export const MCP_PRESETS: Record<McpPresetId, McpPreset> = {
         deepwiki: {
           type: 'streamable-http',
           url: 'https://mcp.deepwiki.com/mcp',
+        },
+      },
+    },
+  },
+  reges: {
+    id: 'reges',
+    label: 'Reges harness',
+    description: 'Reges MCP server - skills, actions (gated), memory, files and web on localhost:3000.',
+    maxLLMSteps: 8,
+    config: {
+      mcpServers: {
+        reges: {
+          type: 'streamable-http',
+          url: 'http://127.0.0.1:3000/mcp',
         },
       },
     },

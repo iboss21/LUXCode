@@ -21,7 +21,7 @@ if (-not (Get-Command ollama -ErrorAction SilentlyContinue)) {
 
 $sets = @{
     quick = @(
-        @{ Name = 'qwen2.5-coder:7b'; Note = 'Fast daily driver — fits fully on 12 GB GPU' }
+        @{ Name = 'qwen2.5-coder:7b'; Note = 'Fast daily driver - fits fully on 12 GB GPU' }
     )
     balanced = @(
         @{ Name = 'qwen2.5-coder:7b'; Note = 'Fast iterations' }
@@ -30,7 +30,7 @@ $sets = @{
     )
     max = @(
         @{ Name = 'qwen2.5-coder:14b'; Note = 'Primary GPU model' }
-        @{ Name = 'qwen2.5-coder:32b'; Note = 'Heavier — uses RAM offload; slower but smarter' }
+        @{ Name = 'qwen2.5-coder:32b'; Note = 'Heavier - uses RAM offload; slower but smarter' }
         @{ Name = 'deepseek-coder-v2:16b'; Note = 'Secondary coding model' }
     )
 }
@@ -38,12 +38,12 @@ $sets = @{
 $models = $sets[$Profile]
 
 Write-Host ""
-Write-Host "  Vibe coding model setup — profile: $Profile" -ForegroundColor Magenta
-Write-Host "  GPU ~12 GB VRAM: prefer 7b–14b for speed; 32b uses your 80 GB RAM." -ForegroundColor DarkGray
+Write-Host "  Vibe coding model setup - profile: $Profile" -ForegroundColor Magenta
+Write-Host "  GPU ~12 GB VRAM: prefer 7b-14b for speed; 32b uses your 80 GB RAM." -ForegroundColor DarkGray
 Write-Host ""
 
 foreach ($m in $models) {
-    Write-Host ">> Pulling $($m.Name) — $($m.Note)" -ForegroundColor Cyan
+    Write-Host ">> Pulling $($m.Name) - $($m.Note)" -ForegroundColor Cyan
     & ollama pull $m.Name
     if ($LASTEXITCODE -ne 0) {
         Write-Host "   Failed: $($m.Name)" -ForegroundColor Red
